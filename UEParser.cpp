@@ -190,10 +190,10 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
         header.LocalizationId = readFString();
 //    }
 
-    if (header.FileVersionUE4 >= 0x0E14) { // VER_UE4_SERIALIZE_TEXT_IN_PACKAGES
+//    if (header.FileVersionUE4 >= 0x0E14) { // VER_UE4_SERIALIZE_TEXT_IN_PACKAGES
         header.GatherableTextDataCount = readInt32();
         header.GatherableTextDataOffset = readInt32();
-    }
+//    }
 
     header.ExportCount = readInt32();
     header.ExportOffset = readInt32();
@@ -287,7 +287,7 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
         }
         else {
             std::cerr << "ChunkIDs has items" << std::endl;
-            return false;
+            //return false;
         }
     }
     else if (header.FileVersionUE4 >= 0x0192) { // VER_UE4_ADDED_CHUNKID_TO_ASSETDATA_AND_UPACKAGE
@@ -328,17 +328,20 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
         names.push_back(name);
     }
 
+
+    return true;
+    
     // Reading imports
     currentIdx = header.ImportOffset;
     for (int32_t i = 0; i < header.ImportCount; ++i) {
-        Import import;
-import.classPackage = readFString();
-import.className = readFString();
-import.outerIndex = readInt32();
-import.objectName = readFString();
-import.packageName = readFString();
-import.bImportOptional = readInt32();
-        imports.push_back(import);
+        Import importA;
+        importA.classPackage = readFString();
+        importA.className = readFString();
+        importA.outerIndex = readInt32();
+        importA.objectName = readFString();
+        importA.packageName = readFString();
+        importA.bImportOptional = readInt32();
+        imports.push_back(importA);
     }
 
     // Reading exports
@@ -497,5 +500,12 @@ int main() {
     std::cout << "Number of imports: " << uasset.imports.size() << std::endl;
     std::cout << "Number of exports: " << uasset.exports.size() << std::endl;
 
+    // Print names
+    for (const auto& name : uasset.names) {
+        std::cout << std::endl;
+        std::cout << "Name: " << name.Name << std::endl;
+        std::cout << "NonCasePreservingHash: " << name.NonCasePreservingHash << std::endl;
+        std::cout << "CasePreservingHash: " << name.CasePreservingHash << std::endl;
+    }
     return 0;
 }
