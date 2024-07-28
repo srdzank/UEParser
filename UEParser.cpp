@@ -6,6 +6,17 @@
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <cstring>
+#include <exception>
+
+// Custom exception class for handling parsing errors
+class ParseException : public std::exception {
+public:
+    explicit ParseException(const std::string& message) : msg_(message) {}
+    virtual const char* what() const noexcept { return msg_.c_str(); }
+private:
+    std::string msg_;
+};
 
 // Function to convert a GUID to a string
 std::string guidToString(uint8_t guid[16]) {
@@ -67,7 +78,7 @@ public:
         int32_t NamesReferencedFromExportDataCount;
         int64_t PayloadTocOffset;
         int32_t DataResourceOffset;
-        int32_t EngineChangelist; // Add this field
+        int32_t EngineChangelist;
     };
 
     struct Import {
@@ -110,10 +121,37 @@ public:
         uint16_t CasePreservingHash;
     };
 
+    struct GatherableTextData {
+        std::string NamespaceName;
+        struct SourceDataStruct {
+            std::string SourceString;
+            struct SourceStringMetaDataStruct {
+                int32_t ValueCount;
+                std::vector<std::string> Values;
+            } SourceStringMetaData;
+        } SourceData;
+        struct SourceSiteContextStruct {
+            std::string KeyName;
+            std::string SiteDescription;
+            uint32_t IsEditorOnly;
+            uint32_t IsOptional;
+            struct InfoMetaDataStruct {
+                int32_t ValueCount;
+                std::vector<std::string> Values;
+            } InfoMetaData;
+            struct KeyMetaDataStruct {
+                int32_t ValueCount;
+                std::vector<std::string> Values;
+            } KeyMetaData;
+        };
+        std::vector<SourceSiteContextStruct> SourceSiteContexts;
+    };
+
     Header header;
     std::vector<Name> names;
     std::vector<Import> imports;
     std::vector<Export> exports;
+    std::vector<GatherableTextData> gatherableTextData;
 
     Uasset() = default;
 
@@ -127,15 +165,51 @@ private:
     uint32_t readUint32();
     int64_t readInt64();
     uint64_t readUint64();
+    std::string readFStringAsUint64();
     std::string readFString();
     std::string readGuid();
+
+    bool readHeader();
+    void readNames();
+    bool readGatherableTextData();
+    void readImports();
+    void readExports();
+    std::string resolveFName(int32_t idx);
 };
+
+std::string Uasset::resolveFName(int32_t idx) {
+    if (idx >= 0 && idx < names.size()) {
+        return names[idx].Name;
+    }
+    return "";
+}
 
 bool Uasset::parse(const std::vector<uint8_t>& bytes) {
     currentIdx = 0;
     bytesPtr = &bytes;
 
-    // Reading the header
+    try {
+        if (!readHeader()) {
+            throw ParseException("Failed to read header");
+        }
+
+        readNames();
+
+        if (!readGatherableTextData()) {
+            throw ParseException("Failed to read gatherable text data");
+        }
+
+        readImports();
+//        readExports();
+
+        return true;
+    } catch (const ParseException& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool Uasset::readHeader() {
     header.EPackageFileTag = readUint32();
     std::cout << "EPackageFileTag: " << header.EPackageFileTag << std::endl;
 
@@ -156,7 +230,6 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
     header.FileVersionLicenseeUE4 = readInt32();
     std::cout << "FileVersionLicenseeUE4: " << header.FileVersionLicenseeUE4 << std::endl;
 
-    // CustomVersions
     int32_t customVersionsCount = readInt32();
     std::cout << "CustomVersions Count: " << customVersionsCount << std::endl;
     for (int32_t i = 0; i < customVersionsCount; ++i) {
@@ -183,42 +256,55 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
 
     if (header.FileVersionUE5 >= 0x0151) { // VER_UE5_ADD_SOFTOBJECTPATH_LIST
         header.SoftObjectPathsCount = readUint32();
+        std::cout << "SoftObjectPathsCount: " << header.SoftObjectPathsCount << std::endl;
         header.SoftObjectPathsOffset = readUint32();
+        std::cout << "SoftObjectPathsOffset: " << header.SoftObjectPathsOffset << std::endl;
     }
 
-//    if (header.FileVersionUE4 >= 0x0D19) { // VER_UE4_ADDED_PACKAGE_SUMMARY_LOCALIZATION_ID
-        header.LocalizationId = readFString();
-//    }
+    header.LocalizationId = readFString();
+    std::cout << "LocalizationId: " << header.LocalizationId << std::endl;
 
-//    if (header.FileVersionUE4 >= 0x0E14) { // VER_UE4_SERIALIZE_TEXT_IN_PACKAGES
-        header.GatherableTextDataCount = readInt32();
-        header.GatherableTextDataOffset = readInt32();
-//    }
+    header.GatherableTextDataCount = readInt32();
+    std::cout << "GatherableTextDataCount: " << header.GatherableTextDataCount << std::endl;
+    header.GatherableTextDataOffset = readInt32();
+    std::cout << "GatherableTextDataOffset: " << header.GatherableTextDataOffset << std::endl;
 
     header.ExportCount = readInt32();
+    std::cout << "ExportCount: " << header.ExportCount << std::endl;
     header.ExportOffset = readInt32();
+    std::cout << "ExportOffset: " << header.ExportOffset << std::endl;
     header.ImportCount = readInt32();
+    std::cout << "ImportCount: " << header.ImportCount << std::endl;
     header.ImportOffset = readInt32();
+    std::cout << "ImportOffset: " << header.ImportOffset << std::endl;
     header.DependsOffset = readInt32();
+    std::cout << "DependsOffset: " << header.DependsOffset << std::endl;
 
     if (header.FileVersionUE4 >= 0x0154) { // VER_UE4_ADD_STRING_ASSET_REFERENCES_MAP
         header.SoftPackageReferencesCount = readInt32();
+        std::cout << "SoftPackageReferencesCount: " << header.SoftPackageReferencesCount << std::endl;
         header.SoftPackageReferencesOffset = readInt32();
+        std::cout << "SoftPackageReferencesOffset: " << header.SoftPackageReferencesOffset << std::endl;
     }
 
     if (header.FileVersionUE4 >= 0x0163) { // VER_UE4_ADDED_SEARCHABLE_NAMES
         header.SearchableNamesOffset = readInt32();
+        std::cout << "SearchableNamesOffset: " << header.SearchableNamesOffset << std::endl;
     }
 
     header.ThumbnailTableOffset = readInt32();
+    std::cout << "ThumbnailTableOffset: " << header.ThumbnailTableOffset << std::endl;
     header.Guid = readGuid();
+    std::cout << "Guid: " << header.Guid << std::endl;
 
     if (header.FileVersionUE4 >= 0x0166) { // VER_UE4_ADDED_PACKAGE_OWNER
         header.PersistentGuid = readGuid();
+        std::cout << "PersistentGuid: " << header.PersistentGuid << std::endl;
     }
 
     if (header.FileVersionUE4 >= 0x0166 && header.FileVersionUE4 < 0x0183) { // VER_UE4_NON_OUTER_PACKAGE_IMPORT
         header.OwnerPersistentGuid = readGuid();
+        std::cout << "OwnerPersistentGuid: " << header.OwnerPersistentGuid << std::endl;
     }
 
     int32_t generationsCount = readInt32();
@@ -235,8 +321,7 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
             std::to_string(readUint16()) + "-" +
             std::to_string(readUint32()) + "+" +
             readFString();
-    }
-    else {
+    } else {
         header.EngineChangelist = readInt32();
     }
 
@@ -246,8 +331,7 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
             std::to_string(readUint16()) + "-" +
             std::to_string(readUint32()) + "+" +
             readFString();
-    }
-    else {
+    } else {
         header.CompatibleWithEngineVersion = header.SavedByEngineVersion;
     }
 
@@ -255,15 +339,13 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
 
     int32_t compressedChunksCount = readInt32();
     if (compressedChunksCount > 0) {
-        std::cerr << "Asset compressed" << std::endl;
-        return false;
+        throw ParseException("Asset compressed");
     }
 
     header.PackageSource = readUint32();
     header.AdditionalPackagesToCookCount = readUint32();
     if (header.AdditionalPackagesToCookCount > 0) {
-        std::cerr << "AdditionalPackagesToCook has items" << std::endl;
-        return false;
+        throw ParseException("AdditionalPackagesToCook has items");
     }
 
     if (header.LegacyFileVersion > -7) {
@@ -285,20 +367,14 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
                 header.ChunkIDs.push_back(readInt32());
             }
         }
-        else {
-            std::cerr << "ChunkIDs has items" << std::endl;
-            //return false;
-        }
-    }
-    else if (header.FileVersionUE4 >= 0x0192) { // VER_UE4_ADDED_CHUNKID_TO_ASSETDATA_AND_UPACKAGE
+    } else if (header.FileVersionUE4 >= 0x0192) { // VER_UE4_ADDED_CHUNKID_TO_ASSETDATA_AND_UPACKAGE
         header.ChunkID = readInt32();
     }
 
     if (header.FileVersionUE4 >= 0x0194) { // VER_UE4_PRELOAD_DEPENDENCIES_IN_COOKED_EXPORTS
         header.PreloadDependencyCount = readInt32();
         header.PreloadDependencyOffset = readInt32();
-    }
-    else {
+    } else {
         header.PreloadDependencyCount = -1;
         header.PreloadDependencyOffset = 0;
     }
@@ -309,8 +385,7 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
 
     if (header.FileVersionUE5 >= 0x0197) { // VER_UE5_PAYLOAD_TOC
         header.PayloadTocOffset = readInt64();
-    }
-    else {
+    } else {
         header.PayloadTocOffset = -1;
     }
 
@@ -318,7 +393,10 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
         header.DataResourceOffset = readInt32();
     }
 
-    // Reading names
+    return true;
+}
+
+void Uasset::readNames() {
     currentIdx = header.NameOffset;
     for (int32_t i = 0; i < header.NameCount; ++i) {
         Name name;
@@ -327,24 +405,102 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
         name.CasePreservingHash = readUint16();
         names.push_back(name);
     }
+}
 
+bool Uasset::readGatherableTextData() {
+    currentIdx = header.GatherableTextDataOffset;
+    for (int32_t i = 0; i < header.GatherableTextDataCount; ++i) {
+        GatherableTextData gatherableTextData;
 
+        gatherableTextData.NamespaceName = readFString();
+        gatherableTextData.SourceData.SourceString = readFString();
+        gatherableTextData.SourceData.SourceStringMetaData.ValueCount = readInt32();
+
+        if (gatherableTextData.SourceData.SourceStringMetaData.ValueCount > 0) {
+            throw ParseException("Unsupported SourceStringMetaData from readGatherableTextData");
+        }
+
+        int32_t countSourceSiteContexts = readInt32();
+        for (int32_t j = 0; j < countSourceSiteContexts; ++j) {
+            GatherableTextData::SourceSiteContextStruct sourceSiteContext;
+            sourceSiteContext.KeyName = readFString();
+            sourceSiteContext.SiteDescription = readFString();
+            sourceSiteContext.IsEditorOnly = readUint32();
+            sourceSiteContext.IsOptional = readUint32();
+
+            sourceSiteContext.InfoMetaData.ValueCount = readInt32();
+            if (sourceSiteContext.InfoMetaData.ValueCount > 0) {
+                throw ParseException("Unsupported SourceSiteContexts.InfoMetaData from readGatherableTextData");
+            }
+
+            sourceSiteContext.KeyMetaData.ValueCount = readInt32();
+            if (sourceSiteContext.KeyMetaData.ValueCount > 0) {
+                throw ParseException("Unsupported SourceSiteContexts.KeyMetaData from readGatherableTextData");
+            }
+
+            gatherableTextData.SourceSiteContexts.push_back(sourceSiteContext);
+        }
+
+        this->gatherableTextData.push_back(gatherableTextData);
+    }
     return true;
-    
-    // Reading imports
+}
+
+
+void Uasset::readImports() {
     currentIdx = header.ImportOffset;
+    imports.clear();
+
     for (int32_t i = 0; i < header.ImportCount; ++i) {
         Import importA;
-        importA.classPackage = readFString();
-        importA.className = readFString();
+
+        // Read indices and resolve names
+        int64_t classPackageIdx = readInt64();
+        int64_t classNameIdx = readInt64();
         importA.outerIndex = readInt32();
-        importA.objectName = readFString();
-        importA.packageName = readFString();
-        importA.bImportOptional = readInt32();
+        int64_t objectNameIdx = readInt64();
+
+        importA.classPackage = resolveFName(classPackageIdx);
+        importA.className = resolveFName(classNameIdx);
+        importA.objectName = resolveFName(objectNameIdx);
+
+        if (header.FileVersionUE4 >= 0x0166) { // VER_UE4_NON_OUTER_PACKAGE_IMPORT
+            int64_t packageNameIdx = readInt64();
+            importA.packageName = resolveFName(packageNameIdx);
+        }
+        else {
+            importA.packageName = "";
+        }
+
+        if (header.FileVersionUE5 >= 0x0197) { // VER_UE5_OPTIONAL_RESOURCES
+            importA.bImportOptional = readInt32();
+        }
+        else {
+            importA.bImportOptional = 0;
+        }
+
         imports.push_back(importA);
     }
+}
 
-    // Reading exports
+
+std::string Uasset::readFStringAsUint64() {
+    uint64_t value = readUint64();
+    return std::to_string(value);
+}
+
+uint64_t Uasset::readUint64() {
+    if (currentIdx + sizeof(uint64_t) > bytesPtr->size()) {
+        throw ParseException("Out of bounds read (uint64)");
+    }
+    uint64_t val;
+    std::memcpy(&val, &(*bytesPtr)[currentIdx], sizeof(val));
+    currentIdx += sizeof(val);
+    return val;
+}
+
+
+void Uasset::readExports() {
     currentIdx = header.ExportOffset;
     for (int32_t i = 0; i < header.ExportCount; ++i) {
         Export exportData;
@@ -380,14 +536,11 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
         }
         exports.push_back(exportData);
     }
-
-    return true;
 }
 
 uint16_t Uasset::readUint16() {
     if (currentIdx + sizeof(uint16_t) > bytesPtr->size()) {
-        std::cerr << "Out of bounds read (uint16)" << std::endl;
-        std::terminate(); // or handle the error appropriately
+        throw ParseException("Out of bounds read (uint16)");
     }
     uint16_t val;
     std::memcpy(&val, &(*bytesPtr)[currentIdx], sizeof(val));
@@ -397,8 +550,7 @@ uint16_t Uasset::readUint16() {
 
 int32_t Uasset::readInt32() {
     if (currentIdx + sizeof(int32_t) > bytesPtr->size()) {
-        std::cerr << "Out of bounds read (int32)" << std::endl;
-        std::terminate(); // or handle the error appropriately
+        throw ParseException("Out of bounds read (int32)");
     }
     int32_t val;
     std::memcpy(&val, &(*bytesPtr)[currentIdx], sizeof(val));
@@ -408,8 +560,7 @@ int32_t Uasset::readInt32() {
 
 uint32_t Uasset::readUint32() {
     if (currentIdx + sizeof(uint32_t) > bytesPtr->size()) {
-        std::cerr << "Out of bounds read (uint32)" << std::endl;
-        std::terminate(); // or handle the error appropriately
+        throw ParseException("Out of bounds read (uint32)");
     }
     uint32_t val;
     std::memcpy(&val, &(*bytesPtr)[currentIdx], sizeof(val));
@@ -419,8 +570,7 @@ uint32_t Uasset::readUint32() {
 
 int64_t Uasset::readInt64() {
     if (currentIdx + sizeof(int64_t) > bytesPtr->size()) {
-        std::cerr << "Out of bounds read (int64)" << std::endl;
-        std::terminate(); // or handle the error appropriately
+        throw ParseException("Out of bounds read (int64)");
     }
     int64_t val;
     std::memcpy(&val, &(*bytesPtr)[currentIdx], sizeof(val));
@@ -428,34 +578,22 @@ int64_t Uasset::readInt64() {
     return val;
 }
 
-uint64_t Uasset::readUint64() {
-    if (currentIdx + sizeof(uint64_t) > bytesPtr->size()) {
-        std::cerr << "Out of bounds read (uint64)" << std::endl;
-        std::terminate(); // or handle the error appropriately
-    }
-    uint64_t val;
-    std::memcpy(&val, &(*bytesPtr)[currentIdx], sizeof(val));
-    currentIdx += sizeof(val);
-    return val;
-}
+
 
 std::string Uasset::readFString() {
     int32_t length = readInt32();
     if (length == 0) return "";
     if (length > 0) {
         if (currentIdx + length > bytesPtr->size()) {
-            std::cerr << "Out of bounds read (FString)" << std::endl;
-            std::terminate(); // or handle the error appropriately;
+            throw ParseException("Out of bounds read (FString)");
         }
         std::string str((*bytesPtr).begin() + currentIdx, (*bytesPtr).begin() + currentIdx + length - 1);
         currentIdx += length;
         return str;
-    }
-    else {
+    } else {
         length = -length * 2;
         if (currentIdx + length > bytesPtr->size()) {
-            std::cerr << "Out of bounds read (FString)" << std::endl;
-            std::terminate(); // or handle the error appropriately;
+            throw ParseException("Out of bounds read (FString)");
         }
         std::wstring wstr((wchar_t*)(&(*bytesPtr)[currentIdx]), length / 2 - 1);
         currentIdx += length;
@@ -471,13 +609,27 @@ std::string Uasset::readFString() {
 std::string Uasset::readGuid() {
     uint8_t guid[16];
     if (currentIdx + sizeof(guid) > bytesPtr->size()) {
-        std::cerr << "Out of bounds read (Guid)" << std::endl;
-        std::terminate(); // or handle the error appropriately
+        throw ParseException("Out of bounds read (Guid)");
     }
     std::memcpy(guid, &(*bytesPtr)[currentIdx], sizeof(guid));
     currentIdx += sizeof(guid);
     return guidToString(guid);
 }
+
+void printImports(const Uasset& uasset) {
+    std::cout << "Imports:" << std::endl;
+    for (size_t i = 0; i < uasset.imports.size(); ++i) {
+        const auto& importA = uasset.imports[i];
+        std::cout << "Import #" << (i + 1) << ":" << std::endl;
+        std::cout << "  classPackage: " << importA.classPackage << std::endl;
+        std::cout << "  className: " << importA.className << std::endl;
+        std::cout << "  outerIndex: " << importA.outerIndex << std::endl;
+        std::cout << "  objectName: " << importA.objectName << std::endl;
+        std::cout << "  packageName: " << importA.packageName << std::endl;
+        std::cout << "  bImportOptional: " << importA.bImportOptional << std::endl;
+    }
+}
+
 
 int main() {
     std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_FrontEndPlayerController.uasset", std::ios::binary);
@@ -507,5 +659,9 @@ int main() {
         std::cout << "NonCasePreservingHash: " << name.NonCasePreservingHash << std::endl;
         std::cout << "CasePreservingHash: " << name.CasePreservingHash << std::endl;
     }
+
+    // Print imports
+    printImports(uasset);
+
     return 0;
 }
