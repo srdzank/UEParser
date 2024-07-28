@@ -9,6 +9,40 @@
 #include <cstring>
 #include <exception>
 
+
+struct ThumbnailIndex {
+    std::string AssetClassName;
+    std::string ObjectPathWithoutPackageName;
+    int32_t FileOffset;
+};
+
+struct Thumbnail {
+    int32_t ImageWidth;
+    int32_t ImageHeight;
+    std::string ImageFormat;
+    int32_t ImageSizeData;
+    std::vector<uint8_t> ImageData;
+};
+
+struct Tag {
+    std::string Key;
+    std::string Value;
+};
+
+struct AssetRegistryEntry {
+    std::string ObjectPath;
+    std::string ObjectClassName;
+    std::vector<Tag> Tags;
+};
+
+struct AssetRegistryData {
+    int64_t DependencyDataOffset;
+    int32_t size;
+    std::vector<AssetRegistryEntry> data;
+};
+
+
+
 // Custom exception class for handling parsing errors
 class ParseException : public std::exception {
 public:
@@ -153,8 +187,11 @@ public:
     std::vector<Export> exports;
     std::vector<GatherableTextData> gatherableTextData;
 
-    Uasset() = default;
+    std::vector<ThumbnailIndex> thumbnailsIndex;
+    std::vector<Thumbnail> thumbnails;
 
+    Uasset() = default;
+    AssetRegistryData assetRegistryData;
     bool parse(const std::vector<uint8_t>& bytes);
 private:
     size_t currentIdx = 0;
@@ -170,12 +207,15 @@ private:
     std::string readFString();
     std::string readGuid();
     std::string readGuidString();
-
+    std::vector<uint8_t> readCountBytes(int32_t count);
+    
+    void readAssetRegistryData();
     bool readHeader();
     void readNames();
     bool readGatherableTextData();
     void readImports();
     void readExports();
+    void readThumbnails();
     std::string resolveFName(int32_t idx);
 };
 
@@ -203,7 +243,8 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
 
         readImports();
         readExports();
-
+        readThumbnails();
+        readAssetRegistryData();
         return true;
     } catch (const ParseException& e) {
         std::cerr << e.what() << std::endl;
@@ -591,6 +632,85 @@ void Uasset::readExports() {
 }
 
 
+void Uasset::readThumbnails() {
+    currentIdx = header.ThumbnailTableOffset;
+
+    int32_t count = readInt32();
+    thumbnailsIndex.clear();
+    thumbnails.clear();
+
+    for (int32_t idx = 0; idx < count; ++idx) {
+        ThumbnailIndex index;
+        index.AssetClassName = readFString();
+        index.ObjectPathWithoutPackageName = readFString();
+        index.FileOffset = readInt32();
+        thumbnailsIndex.push_back(index);
+    }
+
+    for (int32_t idx = 0; idx < count; ++idx) {
+        currentIdx = thumbnailsIndex[idx].FileOffset;
+
+        Thumbnail thumbnail;
+        thumbnail.ImageWidth = readInt32();
+        thumbnail.ImageHeight = readInt32();
+        thumbnail.ImageFormat = "PNG";
+
+        if (thumbnail.ImageHeight < 0) {
+            thumbnail.ImageFormat = "JPEG";
+            thumbnail.ImageHeight = -thumbnail.ImageHeight;
+        }
+
+        thumbnail.ImageSizeData = readInt32();
+        if (thumbnail.ImageSizeData > 0) {
+            thumbnail.ImageData = readCountBytes(thumbnail.ImageSizeData);
+        }
+
+        thumbnails.push_back(thumbnail);
+    }
+}
+
+void Uasset::readAssetRegistryData() {
+    currentIdx = header.AssetRegistryDataOffset;
+
+    int32_t nextOffset = header.TotalHeaderSize;
+    if (header.WorldTileInfoDataOffset > 0) {
+        nextOffset = header.WorldTileInfoDataOffset;
+    }
+
+    assetRegistryData.size = nextOffset - header.AssetRegistryDataOffset;
+
+    assetRegistryData.DependencyDataOffset = readInt64();
+
+    int32_t count = readInt32();
+    assetRegistryData.data.clear();
+    for (int32_t idx = 0; idx < count; ++idx) {
+        AssetRegistryEntry entry;
+        entry.ObjectPath = readFString();
+        entry.ObjectClassName = readFString();
+
+        int32_t countTag = readInt32();
+        for (int32_t idxTag = 0; idxTag < countTag; ++idxTag) {
+            Tag tag;
+            tag.Key = readFString();
+            tag.Value = readFString();
+            entry.Tags.push_back(tag);
+        }
+
+        assetRegistryData.data.push_back(entry);
+    }
+}
+
+
+
+std::vector<uint8_t> Uasset::readCountBytes(int32_t count) {
+    if (currentIdx + count > bytesPtr->size()) {
+        throw std::runtime_error("Out of bounds read (count bytes)");
+    }
+    std::vector<uint8_t> bytes((*bytesPtr).begin() + currentIdx, (*bytesPtr).begin() + currentIdx + count);
+    currentIdx += count;
+    return bytes;
+}
+
 uint16_t Uasset::readUint16() {
     if (currentIdx + sizeof(uint16_t) > bytesPtr->size()) {
         throw ParseException("Out of bounds read (uint16)");
@@ -767,5 +887,29 @@ int main() {
 
     // Print exports
     printExports(uasset);
+
+    // Access and print thumbnail data
+    for (const auto& thumbnail : uasset.thumbnails) {
+        std::cout << "Thumbnail:" << std::endl;
+        std::cout << "  Width: " << thumbnail.ImageWidth << std::endl;
+        std::cout << "  Height: " << thumbnail.ImageHeight << std::endl;
+        std::cout << "  Format: " << thumbnail.ImageFormat << std::endl;
+        std::cout << "  Data Size: " << thumbnail.ImageSizeData << std::endl;
+    }
+    
+    // Access and print asset registry data
+    std::cout << "Asset Registry Data Size: " << uasset.assetRegistryData.size << std::endl;
+    std::cout << "Dependency Data Offset: " << uasset.assetRegistryData.DependencyDataOffset << std::endl;
+
+    for (const auto& entry : uasset.assetRegistryData.data) {
+        std::cout << "Object Path: " << entry.ObjectPath << std::endl;
+        std::cout << "Object Class Name: " << entry.ObjectClassName << std::endl;
+        for (const auto& tag : entry.Tags) {
+            std::cout << "  Tag Key: " << tag.Key << ", Tag Value: " << tag.Value << std::endl;
+        }
+    }
+
+    
+    
     return 0;
 }
