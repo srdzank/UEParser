@@ -8,6 +8,9 @@
 #include <sstream>
 #include <cstring>
 #include <exception>
+#include "json.hpp"
+
+using json = nlohmann::json;
 
 // Structures for storing various data
 
@@ -193,6 +196,7 @@ public:
     UassetData data;
 
     bool parse(const std::vector<uint8_t>& bytes);
+    json toJson() const;
 private:
     size_t currentIdx = 0;
     const std::vector<uint8_t>* bytesPtr = nullptr;
@@ -235,7 +239,7 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
         readImports();
         readExports();
         readThumbnails();
-        readAssetRegistryData();
+//        readAssetRegistryData();
         return true;
     }
     catch (const ParseException& e) {
@@ -772,7 +776,150 @@ std::string Uasset::resolveFName(int32_t idx) {
     return "";
 }
 
-void printImports(const UassetData& data) {
+json Uasset::toJson() const {
+    json j;
+    j["header"] = {
+        {"EPackageFileTag", data.header.EPackageFileTag},
+        {"LegacyFileVersion", data.header.LegacyFileVersion},
+        {"LegacyUE3Version", data.header.LegacyUE3Version},
+        {"FileVersionUE4", data.header.FileVersionUE4},
+        {"FileVersionUE5", data.header.FileVersionUE5},
+        {"FileVersionLicenseeUE4", data.header.FileVersionLicenseeUE4},
+        {"CustomVersions", data.header.CustomVersions},
+        {"TotalHeaderSize", data.header.TotalHeaderSize},
+        {"FolderName", data.header.FolderName},
+        {"PackageFlags", data.header.PackageFlags},
+        {"NameCount", data.header.NameCount},
+        {"NameOffset", data.header.NameOffset},
+        {"SoftObjectPathsCount", data.header.SoftObjectPathsCount},
+        {"SoftObjectPathsOffset", data.header.SoftObjectPathsOffset},
+        {"LocalizationId", data.header.LocalizationId},
+        {"GatherableTextDataCount", data.header.GatherableTextDataCount},
+        {"GatherableTextDataOffset", data.header.GatherableTextDataOffset},
+        {"ExportCount", data.header.ExportCount},
+        {"ExportOffset", data.header.ExportOffset},
+        {"ImportCount", data.header.ImportCount},
+        {"ImportOffset", data.header.ImportOffset},
+        {"DependsOffset", data.header.DependsOffset},
+        {"SoftPackageReferencesCount", data.header.SoftPackageReferencesCount},
+        {"SoftPackageReferencesOffset", data.header.SoftPackageReferencesOffset},
+        {"SearchableNamesOffset", data.header.SearchableNamesOffset},
+        {"ThumbnailTableOffset", data.header.ThumbnailTableOffset},
+        {"Guid", data.header.Guid},
+        {"PersistentGuid", data.header.PersistentGuid},
+        {"OwnerPersistentGuid", data.header.OwnerPersistentGuid},
+        {"Generations", data.header.Generations},
+        {"SavedByEngineVersion", data.header.SavedByEngineVersion},
+        {"CompatibleWithEngineVersion", data.header.CompatibleWithEngineVersion},
+        {"CompressionFlags", data.header.CompressionFlags},
+        {"PackageSource", data.header.PackageSource},
+        {"AdditionalPackagesToCookCount", data.header.AdditionalPackagesToCookCount},
+        {"NumTextureAllocations", data.header.NumTextureAllocations},
+        {"AssetRegistryDataOffset", data.header.AssetRegistryDataOffset},
+        {"BulkDataStartOffset", data.header.BulkDataStartOffset},
+        {"WorldTileInfoDataOffset", data.header.WorldTileInfoDataOffset},
+        {"ChunkIDs", data.header.ChunkIDs},
+        {"ChunkID", data.header.ChunkID},
+        {"PreloadDependencyCount", data.header.PreloadDependencyCount},
+        {"PreloadDependencyOffset", data.header.PreloadDependencyOffset},
+        {"NamesReferencedFromExportDataCount", data.header.NamesReferencedFromExportDataCount},
+        {"PayloadTocOffset", data.header.PayloadTocOffset},
+        {"DataResourceOffset", data.header.DataResourceOffset},
+        {"EngineChangelist", data.header.EngineChangelist}
+    };
+    j["names"] = json::array();
+    for (const auto& name : data.names) {
+        j["names"].push_back({
+            {"Name", name.Name},
+            {"NonCasePreservingHash", name.NonCasePreservingHash},
+            {"CasePreservingHash", name.CasePreservingHash}
+            });
+    }
+    j["imports"] = json::array();
+    for (const auto & import : data.imports) {
+        j["imports"].push_back({
+            {"classPackage", import.classPackage},
+            {"className", import.className},
+            {"outerIndex", import.outerIndex},
+            {"objectName", import.objectName},
+            {"packageName", import.packageName},
+            {"bImportOptional", import.bImportOptional}
+            });
+    }
+    j["exports"] = json::array();
+    for (const auto& exportData : data.exports) {
+        j["exports"].push_back({
+            {"classIndex", exportData.classIndex},
+            {"superIndex", exportData.superIndex},
+            {"templateIndex", exportData.templateIndex},
+            {"outerIndex", exportData.outerIndex},
+            {"objectName", exportData.objectName},
+            {"objectFlags", exportData.objectFlags},
+            {"serialSize", exportData.serialSize},
+            {"serialOffset", exportData.serialOffset},
+            {"bForcedExport", exportData.bForcedExport},
+            {"bNotForClient", exportData.bNotForClient},
+            {"bNotForServer", exportData.bNotForServer},
+            {"packageGuid", exportData.packageGuid},
+            {"packageFlags", exportData.packageFlags},
+            {"bNotAlwaysLoadedForEditorGame", exportData.bNotAlwaysLoadedForEditorGame},
+            {"bIsAsset", exportData.bIsAsset},
+            {"bGeneratePublicHash", exportData.bGeneratePublicHash},
+            {"firstExportDependency", exportData.firstExportDependency},
+            {"serializationBeforeSerializationDependencies", exportData.serializationBeforeSerializationDependencies},
+            {"createBeforeSerializationDependencies", exportData.createBeforeSerializationDependencies},
+            {"serializationBeforeCreateDependencies", exportData.serializationBeforeCreateDependencies},
+            {"createBeforeCreateDependencies", exportData.createBeforeCreateDependencies},
+            {"data", exportData.data}
+            });
+    }
+    j["thumbnails"] = json::array();
+    for (const auto& thumbnail : data.thumbnails) {
+        j["thumbnails"].push_back({
+            {"ImageWidth", thumbnail.ImageWidth},
+            {"ImageHeight", thumbnail.ImageHeight},
+            {"ImageFormat", thumbnail.ImageFormat},
+            {"ImageSizeData", thumbnail.ImageSizeData},
+            {"ImageData", thumbnail.ImageData}
+            });
+    }
+    j["assetRegistryData"] = {
+        {"DependencyDataOffset", data.assetRegistryData.DependencyDataOffset},
+        {"size", data.assetRegistryData.size},
+        {"data", json::array()}
+    };
+    for (const auto& entry : data.assetRegistryData.data) {
+        json entryJson = {
+            {"ObjectPath", entry.ObjectPath},
+            {"ObjectClassName", entry.ObjectClassName},
+            {"Tags", json::array()}
+        };
+        for (const auto& tag : entry.Tags) {
+            entryJson["Tags"].push_back({
+                {"Key", tag.Key},
+                {"Value", tag.Value}
+                });
+        }
+        j["assetRegistryData"]["data"].push_back(entryJson);
+    }
+    return j;
+}
+
+void printUassetData(const UassetData& data) {
+    std::cout << "Header: " << data.header.EPackageFileTag << std::endl;
+    std::cout << "Number of names: " << data.names.size() << std::endl;
+    std::cout << "Number of imports: " << data.imports.size() << std::endl;
+    std::cout << "Number of exports: " << data.exports.size() << std::endl;
+
+    // Print names
+    for (const auto& name : data.names) {
+        std::cout << std::endl;
+        std::cout << "Name: " << name.Name << std::endl;
+        std::cout << "NonCasePreservingHash: " << name.NonCasePreservingHash << std::endl;
+        std::cout << "CasePreservingHash: " << name.CasePreservingHash << std::endl;
+    }
+
+    // Print imports
     std::cout << "Imports:" << std::endl;
     for (size_t i = 0; i < data.imports.size(); ++i) {
         const auto& importA = data.imports[i];
@@ -784,9 +931,8 @@ void printImports(const UassetData& data) {
         std::cout << "  packageName: " << importA.packageName << std::endl;
         std::cout << "  bImportOptional: " << importA.bImportOptional << std::endl;
     }
-}
 
-void printExports(const UassetData& data) {
+    // Print exports
     std::cout << "Exports:" << std::endl;
     for (size_t i = 0; i < data.exports.size(); ++i) {
         const auto& exportA = data.exports[i];
@@ -816,19 +962,17 @@ void printExports(const UassetData& data) {
             std::cout << "  data[" << j << "]: " << exportA.data[j] << std::endl;
         }
     }
-}
 
-void printThumbnails(const UassetData& data) {
-    std::cout << "Thumbnails:" << std::endl;
+    // Print thumbnail data
     for (const auto& thumbnail : data.thumbnails) {
+        std::cout << "Thumbnail:" << std::endl;
         std::cout << "  Width: " << thumbnail.ImageWidth << std::endl;
         std::cout << "  Height: " << thumbnail.ImageHeight << std::endl;
         std::cout << "  Format: " << thumbnail.ImageFormat << std::endl;
         std::cout << "  Data Size: " << thumbnail.ImageSizeData << std::endl;
     }
-}
 
-void printAssetRegistryData(const UassetData& data) {
+    // Print asset registry data
     std::cout << "Asset Registry Data Size: " << data.assetRegistryData.size << std::endl;
     std::cout << "Dependency Data Offset: " << data.assetRegistryData.DependencyDataOffset << std::endl;
 
@@ -839,32 +983,6 @@ void printAssetRegistryData(const UassetData& data) {
             std::cout << "  Tag Key: " << tag.Key << ", Tag Value: " << tag.Value << std::endl;
         }
     }
-}
-
-void printUassetData(const UassetData& data) {
-    std::cout << "Header: " << data.header.EPackageFileTag << std::endl;
-    std::cout << "Number of names: " << data.names.size() << std::endl;
-    std::cout << "Number of imports: " << data.imports.size() << std::endl;
-    std::cout << "Number of exports: " << data.exports.size() << std::endl;
-
-    // Print names
-    for (const auto& name : data.names) {
-        std::cout << "Name: " << name.Name << std::endl;
-        std::cout << "NonCasePreservingHash: " << name.NonCasePreservingHash << std::endl;
-        std::cout << "CasePreservingHash: " << name.CasePreservingHash << std::endl;
-    }
-
-    // Print imports
-    printImports(data);
-
-    // Print exports
-    printExports(data);
-
-    // Print thumbnails
-    printThumbnails(data);
-
-    // Print asset registry data
-    printAssetRegistryData(data);
 }
 
 int main() {
@@ -882,8 +1000,12 @@ int main() {
         return 1;
     }
 
-    // Print all data
+    // Print parsed data
     printUassetData(uasset.data);
+
+    // Convert to JSON
+    json j = uasset.toJson();
+    std::cout << j.dump(4) << std::endl;
 
     return 0;
 }
