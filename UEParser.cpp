@@ -9,6 +9,7 @@
 #include <cstring>
 #include <exception>
 
+// Structures for storing various data
 
 struct ThumbnailIndex {
     std::string AssetClassName;
@@ -41,30 +42,7 @@ struct AssetRegistryData {
     std::vector<AssetRegistryEntry> data;
 };
 
-
-
-// Custom exception class for handling parsing errors
-class ParseException : public std::exception {
-public:
-    explicit ParseException(const std::string& message) : msg_(message) {}
-    virtual const char* what() const noexcept { return msg_.c_str(); }
-private:
-    std::string msg_;
-};
-
-// Function to convert a GUID to a string
-std::string guidToString(uint8_t guid[16]) {
-    std::ostringstream ss;
-    for (int i = 0; i < 16; ++i) {
-        if (i == 4 || i == 6 || i == 8 || i == 10)
-            ss << '-';
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(guid[i]);
-    }
-    return ss.str();
-}
-
-class Uasset {
-public:
+struct UassetData {
     struct Header {
         uint32_t EPackageFileTag;
         int32_t LegacyFileVersion;
@@ -113,7 +91,7 @@ public:
         int64_t PayloadTocOffset;
         int32_t DataResourceOffset;
         int32_t EngineChangelist;
-    };
+    } header;
 
     struct Import {
         std::string classPackage;
@@ -181,17 +159,39 @@ public:
         std::vector<SourceSiteContextStruct> SourceSiteContexts;
     };
 
-    Header header;
     std::vector<Name> names;
     std::vector<Import> imports;
     std::vector<Export> exports;
     std::vector<GatherableTextData> gatherableTextData;
-
     std::vector<ThumbnailIndex> thumbnailsIndex;
     std::vector<Thumbnail> thumbnails;
-
-    Uasset() = default;
     AssetRegistryData assetRegistryData;
+};
+
+// Custom exception class for handling parsing errors
+class ParseException : public std::exception {
+public:
+    explicit ParseException(const std::string& message) : msg_(message) {}
+    virtual const char* what() const noexcept { return msg_.c_str(); }
+private:
+    std::string msg_;
+};
+
+// Function to convert a GUID to a string
+std::string guidToString(uint8_t guid[16]) {
+    std::ostringstream ss;
+    for (int i = 0; i < 16; ++i) {
+        if (i == 4 || i == 6 || i == 8 || i == 10)
+            ss << '-';
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(guid[i]);
+    }
+    return ss.str();
+}
+
+class Uasset {
+public:
+    UassetData data;
+
     bool parse(const std::vector<uint8_t>& bytes);
 private:
     size_t currentIdx = 0;
@@ -203,12 +203,10 @@ private:
     int64_t readInt64();
     int64_t readInt64Export();
     uint64_t readUint64();
-    std::string readFStringAsUint64();
     std::string readFString();
     std::string readGuid();
-    std::string readGuidString();
     std::vector<uint8_t> readCountBytes(int32_t count);
-    
+
     void readAssetRegistryData();
     bool readHeader();
     void readNames();
@@ -218,13 +216,6 @@ private:
     void readThumbnails();
     std::string resolveFName(int32_t idx);
 };
-
-std::string Uasset::resolveFName(int32_t idx) {
-    if (idx >= 0 && idx < names.size()) {
-        return names[idx].Name;
-    }
-    return "";
-}
 
 bool Uasset::parse(const std::vector<uint8_t>& bytes) {
     currentIdx = 0;
@@ -246,214 +237,222 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
         readThumbnails();
         readAssetRegistryData();
         return true;
-    } catch (const ParseException& e) {
+    }
+    catch (const ParseException& e) {
         std::cerr << e.what() << std::endl;
         return false;
     }
 }
 
 bool Uasset::readHeader() {
-    header.EPackageFileTag = readUint32();
-    std::cout << "EPackageFileTag: " << header.EPackageFileTag << std::endl;
+    data.header.EPackageFileTag = readUint32();
+    std::cout << "EPackageFileTag: " << data.header.EPackageFileTag << std::endl;
 
-    header.LegacyFileVersion = readInt32();
-    std::cout << "LegacyFileVersion: " << header.LegacyFileVersion << std::endl;
+    data.header.LegacyFileVersion = readInt32();
+    std::cout << "LegacyFileVersion: " << data.header.LegacyFileVersion << std::endl;
 
-    header.LegacyUE3Version = readInt32();
-    std::cout << "LegacyUE3Version: " << header.LegacyUE3Version << std::endl;
+    data.header.LegacyUE3Version = readInt32();
+    std::cout << "LegacyUE3Version: " << data.header.LegacyUE3Version << std::endl;
 
-    header.FileVersionUE4 = readInt32();
-    std::cout << "FileVersionUE4: " << header.FileVersionUE4 << std::endl;
+    data.header.FileVersionUE4 = readInt32();
+    std::cout << "FileVersionUE4: " << data.header.FileVersionUE4 << std::endl;
 
-    if (header.LegacyFileVersion <= -8) {
-        header.FileVersionUE5 = readInt32();
-        std::cout << "FileVersionUE5: " << header.FileVersionUE5 << std::endl;
+    if (data.header.LegacyFileVersion <= -8) {
+        data.header.FileVersionUE5 = readInt32();
+        std::cout << "FileVersionUE5: " << data.header.FileVersionUE5 << std::endl;
     }
 
-    header.FileVersionLicenseeUE4 = readInt32();
-    std::cout << "FileVersionLicenseeUE4: " << header.FileVersionLicenseeUE4 << std::endl;
+    data.header.FileVersionLicenseeUE4 = readInt32();
+    std::cout << "FileVersionLicenseeUE4: " << data.header.FileVersionLicenseeUE4 << std::endl;
 
     int32_t customVersionsCount = readInt32();
     std::cout << "CustomVersions Count: " << customVersionsCount << std::endl;
     for (int32_t i = 0; i < customVersionsCount; ++i) {
         std::string key = readGuid();
         int32_t version = readInt32();
-        header.CustomVersions.push_back({ key, version });
+        data.header.CustomVersions.push_back({ key, version });
         std::cout << "CustomVersion[" << i << "]: " << key << " - " << version << std::endl;
     }
 
-    header.TotalHeaderSize = readInt32();
-    std::cout << "TotalHeaderSize: " << header.TotalHeaderSize << std::endl;
+    data.header.TotalHeaderSize = readInt32();
+    std::cout << "TotalHeaderSize: " << data.header.TotalHeaderSize << std::endl;
 
-    header.FolderName = readFString();
-    std::cout << "FolderName: " << header.FolderName << std::endl;
+    data.header.FolderName = readFString();
+    std::cout << "FolderName: " << data.header.FolderName << std::endl;
 
-    header.PackageFlags = readUint32();
-    std::cout << "PackageFlags: " << header.PackageFlags << std::endl;
+    data.header.PackageFlags = readUint32();
+    std::cout << "PackageFlags: " << data.header.PackageFlags << std::endl;
 
-    header.NameCount = readInt32();
-    std::cout << "NameCount: " << header.NameCount << std::endl;
+    data.header.NameCount = readInt32();
+    std::cout << "NameCount: " << data.header.NameCount << std::endl;
 
-    header.NameOffset = readInt32();
-    std::cout << "NameOffset: " << header.NameOffset << std::endl;
+    data.header.NameOffset = readInt32();
+    std::cout << "NameOffset: " << data.header.NameOffset << std::endl;
 
-    if (header.FileVersionUE5 >= 0x0151) { // VER_UE5_ADD_SOFTOBJECTPATH_LIST
-        header.SoftObjectPathsCount = readUint32();
-        std::cout << "SoftObjectPathsCount: " << header.SoftObjectPathsCount << std::endl;
-        header.SoftObjectPathsOffset = readUint32();
-        std::cout << "SoftObjectPathsOffset: " << header.SoftObjectPathsOffset << std::endl;
+    if (data.header.FileVersionUE5 >= 0x0151) { // VER_UE5_ADD_SOFTOBJECTPATH_LIST
+        data.header.SoftObjectPathsCount = readUint32();
+        std::cout << "SoftObjectPathsCount: " << data.header.SoftObjectPathsCount << std::endl;
+        data.header.SoftObjectPathsOffset = readUint32();
+        std::cout << "SoftObjectPathsOffset: " << data.header.SoftObjectPathsOffset << std::endl;
     }
 
-    header.LocalizationId = readFString();
-    std::cout << "LocalizationId: " << header.LocalizationId << std::endl;
+    data.header.LocalizationId = readFString();
+    std::cout << "LocalizationId: " << data.header.LocalizationId << std::endl;
 
-    header.GatherableTextDataCount = readInt32();
-    std::cout << "GatherableTextDataCount: " << header.GatherableTextDataCount << std::endl;
-    header.GatherableTextDataOffset = readInt32();
-    std::cout << "GatherableTextDataOffset: " << header.GatherableTextDataOffset << std::endl;
+    data.header.GatherableTextDataCount = readInt32();
+    std::cout << "GatherableTextDataCount: " << data.header.GatherableTextDataCount << std::endl;
+    data.header.GatherableTextDataOffset = readInt32();
+    std::cout << "GatherableTextDataOffset: " << data.header.GatherableTextDataOffset << std::endl;
 
-    header.ExportCount = readInt32();
-    std::cout << "ExportCount: " << header.ExportCount << std::endl;
-    header.ExportOffset = readInt32();
-    std::cout << "ExportOffset: " << header.ExportOffset << std::endl;
-    header.ImportCount = readInt32();
-    std::cout << "ImportCount: " << header.ImportCount << std::endl;
-    header.ImportOffset = readInt32();
-    std::cout << "ImportOffset: " << header.ImportOffset << std::endl;
-    header.DependsOffset = readInt32();
-    std::cout << "DependsOffset: " << header.DependsOffset << std::endl;
+    data.header.ExportCount = readInt32();
+    std::cout << "ExportCount: " << data.header.ExportCount << std::endl;
+    data.header.ExportOffset = readInt32();
+    std::cout << "ExportOffset: " << data.header.ExportOffset << std::endl;
+    data.header.ImportCount = readInt32();
+    std::cout << "ImportCount: " << data.header.ImportCount << std::endl;
+    data.header.ImportOffset = readInt32();
+    std::cout << "ImportOffset: " << data.header.ImportOffset << std::endl;
+    data.header.DependsOffset = readInt32();
+    std::cout << "DependsOffset: " << data.header.DependsOffset << std::endl;
 
-    if (header.FileVersionUE4 >= 0x0154) { // VER_UE4_ADD_STRING_ASSET_REFERENCES_MAP
-        header.SoftPackageReferencesCount = readInt32();
-        std::cout << "SoftPackageReferencesCount: " << header.SoftPackageReferencesCount << std::endl;
-        header.SoftPackageReferencesOffset = readInt32();
-        std::cout << "SoftPackageReferencesOffset: " << header.SoftPackageReferencesOffset << std::endl;
+    if (data.header.FileVersionUE4 >= 0x0154) { // VER_UE4_ADD_STRING_ASSET_REFERENCES_MAP
+        data.header.SoftPackageReferencesCount = readInt32();
+        std::cout << "SoftPackageReferencesCount: " << data.header.SoftPackageReferencesCount << std::endl;
+        data.header.SoftPackageReferencesOffset = readInt32();
+        std::cout << "SoftPackageReferencesOffset: " << data.header.SoftPackageReferencesOffset << std::endl;
     }
 
-    if (header.FileVersionUE4 >= 0x0163) { // VER_UE4_ADDED_SEARCHABLE_NAMES
-        header.SearchableNamesOffset = readInt32();
-        std::cout << "SearchableNamesOffset: " << header.SearchableNamesOffset << std::endl;
+    if (data.header.FileVersionUE4 >= 0x0163) { // VER_UE4_ADDED_SEARCHABLE_NAMES
+        data.header.SearchableNamesOffset = readInt32();
+        std::cout << "SearchableNamesOffset: " << data.header.SearchableNamesOffset << std::endl;
     }
 
-    header.ThumbnailTableOffset = readInt32();
-    std::cout << "ThumbnailTableOffset: " << header.ThumbnailTableOffset << std::endl;
-    header.Guid = readGuid();
-    std::cout << "Guid: " << header.Guid << std::endl;
+    data.header.ThumbnailTableOffset = readInt32();
+    std::cout << "ThumbnailTableOffset: " << data.header.ThumbnailTableOffset << std::endl;
+    data.header.Guid = readGuid();
+    std::cout << "Guid: " << data.header.Guid << std::endl;
 
-    if (header.FileVersionUE4 >= 0x0166) { // VER_UE4_ADDED_PACKAGE_OWNER
-        header.PersistentGuid = readGuid();
-        std::cout << "PersistentGuid: " << header.PersistentGuid << std::endl;
+    if (data.header.FileVersionUE4 >= 0x0166) { // VER_UE4_ADDED_PACKAGE_OWNER
+        data.header.PersistentGuid = readGuid();
+        std::cout << "PersistentGuid: " << data.header.PersistentGuid << std::endl;
     }
 
-    if (header.FileVersionUE4 >= 0x0166 && header.FileVersionUE4 < 0x0183) { // VER_UE4_NON_OUTER_PACKAGE_IMPORT
-        header.OwnerPersistentGuid = readGuid();
-        std::cout << "OwnerPersistentGuid: " << header.OwnerPersistentGuid << std::endl;
+    if (data.header.FileVersionUE4 >= 0x0166 && data.header.FileVersionUE4 < 0x0183) { // VER_UE4_NON_OUTER_PACKAGE_IMPORT
+        data.header.OwnerPersistentGuid = readGuid();
+        std::cout << "OwnerPersistentGuid: " << data.header.OwnerPersistentGuid << std::endl;
     }
 
     int32_t generationsCount = readInt32();
-    header.Generations.clear();
+    data.header.Generations.clear();
     for (int32_t i = 0; i < generationsCount; ++i) {
         int32_t exportCount = readInt32();
         int32_t nameCount = readInt32();
-        header.Generations.push_back({ exportCount, nameCount });
+        data.header.Generations.push_back({ exportCount, nameCount });
     }
 
-    if (header.FileVersionUE4 >= 0x0171) { // VER_UE4_ENGINE_VERSION_OBJECT
-        header.SavedByEngineVersion = std::to_string(readUint16()) + "." +
+    if (data.header.FileVersionUE4 >= 0x0171) { // VER_UE4_ENGINE_VERSION_OBJECT
+        data.header.SavedByEngineVersion = std::to_string(readUint16()) + "." +
             std::to_string(readUint16()) + "." +
             std::to_string(readUint16()) + "-" +
             std::to_string(readUint32()) + "+" +
             readFString();
-    } else {
-        header.EngineChangelist = readInt32();
+    }
+    else {
+        data.header.EngineChangelist = readInt32();
     }
 
-    if (header.FileVersionUE4 >= 0x0175) { // VER_UE4_PACKAGE_SUMMARY_HAS_COMPATIBLE_ENGINE_VERSION
-        header.CompatibleWithEngineVersion = std::to_string(readUint16()) + "." +
+    if (data.header.FileVersionUE4 >= 0x0175) { // VER_UE4_PACKAGE_SUMMARY_HAS_COMPATIBLE_ENGINE_VERSION
+        data.header.CompatibleWithEngineVersion = std::to_string(readUint16()) + "." +
             std::to_string(readUint16()) + "." +
             std::to_string(readUint16()) + "-" +
             std::to_string(readUint32()) + "+" +
             readFString();
-    } else {
-        header.CompatibleWithEngineVersion = header.SavedByEngineVersion;
+    }
+    else {
+        data.header.CompatibleWithEngineVersion = data.header.SavedByEngineVersion;
     }
 
-    header.CompressionFlags = readUint32();
+    data.header.CompressionFlags = readUint32();
 
     int32_t compressedChunksCount = readInt32();
     if (compressedChunksCount > 0) {
         throw ParseException("Asset compressed");
     }
 
-    header.PackageSource = readUint32();
-    header.AdditionalPackagesToCookCount = readUint32();
-    if (header.AdditionalPackagesToCookCount > 0) {
+    data.header.PackageSource = readUint32();
+    data.header.AdditionalPackagesToCookCount = readUint32();
+    if (data.header.AdditionalPackagesToCookCount > 0) {
         throw ParseException("AdditionalPackagesToCook has items");
     }
 
-    if (header.LegacyFileVersion > -7) {
-        header.NumTextureAllocations = readInt32();
+    if (data.header.LegacyFileVersion > -7) {
+        data.header.NumTextureAllocations = readInt32();
     }
 
-    header.AssetRegistryDataOffset = readInt32();
-    header.BulkDataStartOffset = readInt64();
+    data.header.AssetRegistryDataOffset = readInt32();
+    data.header.BulkDataStartOffset = readInt64();
 
-    if (header.FileVersionUE4 >= 0x0183) { // VER_UE4_WORLD_LEVEL_INFO
-        header.WorldTileInfoDataOffset = readInt32();
+    if (data.header.FileVersionUE4 >= 0x0183) { // VER_UE4_WORLD_LEVEL_INFO
+        data.header.WorldTileInfoDataOffset = readInt32();
     }
 
-    if (header.FileVersionUE4 >= 0x0191) { // VER_UE4_CHANGED_CHUNKID_TO_BE_AN_ARRAY_OF_CHUNKIDS
+    if (data.header.FileVersionUE4 >= 0x0191) { // VER_UE4_CHANGED_CHUNKID_TO_BE_AN_ARRAY_OF_CHUNKIDS
         int32_t chunkIDsCount = readInt32();
-        header.ChunkIDs.clear();
+        data.header.ChunkIDs.clear();
         if (chunkIDsCount > 0) {
             for (int32_t i = 0; i < chunkIDsCount; ++i) {
-                header.ChunkIDs.push_back(readInt32());
+                data.header.ChunkIDs.push_back(readInt32());
             }
         }
-    } else if (header.FileVersionUE4 >= 0x0192) { // VER_UE4_ADDED_CHUNKID_TO_ASSETDATA_AND_UPACKAGE
-        header.ChunkID = readInt32();
+    }
+    else if (data.header.FileVersionUE4 >= 0x0192) { // VER_UE4_ADDED_CHUNKID_TO_ASSETDATA_AND_UPACKAGE
+        data.header.ChunkID = readInt32();
     }
 
-    if (header.FileVersionUE4 >= 0x0194) { // VER_UE4_PRELOAD_DEPENDENCIES_IN_COOKED_EXPORTS
-        header.PreloadDependencyCount = readInt32();
-        header.PreloadDependencyOffset = readInt32();
-    } else {
-        header.PreloadDependencyCount = -1;
-        header.PreloadDependencyOffset = 0;
+    if (data.header.FileVersionUE4 >= 0x0194) { // VER_UE4_PRELOAD_DEPENDENCIES_IN_COOKED_EXPORTS
+        data.header.PreloadDependencyCount = readInt32();
+        data.header.PreloadDependencyOffset = readInt32();
+    }
+    else {
+        data.header.PreloadDependencyCount = -1;
+        data.header.PreloadDependencyOffset = 0;
     }
 
-    if (header.FileVersionUE5 >= 0x0196) { // VER_UE5_NAMES_REFERENCED_FROM_EXPORT_DATA
-        header.NamesReferencedFromExportDataCount = readInt32();
+    if (data.header.FileVersionUE5 >= 0x0196) { // VER_UE5_NAMES_REFERENCED_FROM_EXPORT_DATA
+        data.header.NamesReferencedFromExportDataCount = readInt32();
     }
 
-    if (header.FileVersionUE5 >= 0x0197) { // VER_UE5_PAYLOAD_TOC
-        header.PayloadTocOffset = readInt64();
-    } else {
-        header.PayloadTocOffset = -1;
+    if (data.header.FileVersionUE5 >= 0x0197) { // VER_UE5_PAYLOAD_TOC
+        data.header.PayloadTocOffset = readInt64();
+    }
+    else {
+        data.header.PayloadTocOffset = -1;
     }
 
-    if (header.FileVersionUE5 >= 0x0198) { // VER_UE5_DATA_RESOURCES
-        header.DataResourceOffset = readInt32();
+    if (data.header.FileVersionUE5 >= 0x0198) { // VER_UE5_DATA_RESOURCES
+        data.header.DataResourceOffset = readInt32();
     }
 
     return true;
 }
 
 void Uasset::readNames() {
-    currentIdx = header.NameOffset;
-    for (int32_t i = 0; i < header.NameCount; ++i) {
-        Name name;
+    currentIdx = data.header.NameOffset;
+    data.names.clear();
+    for (int32_t i = 0; i < data.header.NameCount; ++i) {
+        UassetData::Name name;
         name.Name = readFString();
         name.NonCasePreservingHash = readUint16();
         name.CasePreservingHash = readUint16();
-        names.push_back(name);
+        data.names.push_back(name);
     }
 }
 
 bool Uasset::readGatherableTextData() {
-    currentIdx = header.GatherableTextDataOffset;
-    for (int32_t i = 0; i < header.GatherableTextDataCount; ++i) {
-        GatherableTextData gatherableTextData;
+    currentIdx = data.header.GatherableTextDataOffset;
+    data.gatherableTextData.clear();
+    for (int32_t i = 0; i < data.header.GatherableTextDataCount; ++i) {
+        UassetData::GatherableTextData gatherableTextData;
 
         gatherableTextData.NamespaceName = readFString();
         gatherableTextData.SourceData.SourceString = readFString();
@@ -465,7 +464,7 @@ bool Uasset::readGatherableTextData() {
 
         int32_t countSourceSiteContexts = readInt32();
         for (int32_t j = 0; j < countSourceSiteContexts; ++j) {
-            GatherableTextData::SourceSiteContextStruct sourceSiteContext;
+            UassetData::GatherableTextData::SourceSiteContextStruct sourceSiteContext;
             sourceSiteContext.KeyName = readFString();
             sourceSiteContext.SiteDescription = readFString();
             sourceSiteContext.IsEditorOnly = readUint32();
@@ -484,18 +483,17 @@ bool Uasset::readGatherableTextData() {
             gatherableTextData.SourceSiteContexts.push_back(sourceSiteContext);
         }
 
-        this->gatherableTextData.push_back(gatherableTextData);
+        data.gatherableTextData.push_back(gatherableTextData);
     }
     return true;
 }
 
-
 void Uasset::readImports() {
-    currentIdx = header.ImportOffset;
-    imports.clear();
+    currentIdx = data.header.ImportOffset;
+    data.imports.clear();
 
-    for (int32_t i = 0; i < header.ImportCount; ++i) {
-        Import importA;
+    for (int32_t i = 0; i < data.header.ImportCount; ++i) {
+        UassetData::Import importA;
 
         // Read indices and resolve names
         int64_t classPackageIdx = readInt64();
@@ -507,7 +505,7 @@ void Uasset::readImports() {
         importA.className = resolveFName(classNameIdx);
         importA.objectName = resolveFName(objectNameIdx);
 
-        if (header.FileVersionUE4 >= 0x0166) { // VER_UE4_NON_OUTER_PACKAGE_IMPORT
+        if (data.header.FileVersionUE4 >= 0x0166) { // VER_UE4_NON_OUTER_PACKAGE_IMPORT
             int64_t packageNameIdx = readInt64();
             importA.packageName = resolveFName(packageNameIdx);
         }
@@ -515,62 +513,28 @@ void Uasset::readImports() {
             importA.packageName = "";
         }
 
-        if (header.FileVersionUE5 >= 0x0197) { // VER_UE5_OPTIONAL_RESOURCES
+        if (data.header.FileVersionUE5 >= 0x0197) { // VER_UE5_OPTIONAL_RESOURCES
             importA.bImportOptional = readInt32();
         }
         else {
             importA.bImportOptional = 0;
         }
 
-        imports.push_back(importA);
+        data.imports.push_back(importA);
     }
-}
-
-
-std::string Uasset::readFStringAsUint64() {
-    uint64_t value = readUint64();
-    return std::to_string(value);
-}
-
-uint64_t Uasset::readUint64() {
-    if (currentIdx + sizeof(uint64_t) > bytesPtr->size()) {
-        throw ParseException("Out of bounds read (uint64)");
-    }
-    uint64_t val;
-    std::memcpy(&val, &(*bytesPtr)[currentIdx], sizeof(val));
-    currentIdx += sizeof(val);
-    return val;
-}
-
-
-std::string Uasset::readGuidString() {
-    if (currentIdx + 16 > bytesPtr->size()) {
-        throw ParseException("Out of bounds read (GuidString)");
-    }
-
-    std::ostringstream ss;
-    for (int i = 0; i < 16; ++i) {
-        if (i == 4 || i == 6 || i == 8 || i == 10)
-            ss << '-';
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*bytesPtr)[currentIdx + i]);
-    }
-    currentIdx += 16;
-    std::string guid = ss.str();
-    std::transform(guid.begin(), guid.end(), guid.begin(), ::toupper);
-    return guid;
 }
 
 void Uasset::readExports() {
-    currentIdx = header.ExportOffset;
-    exports.clear();
+    currentIdx = data.header.ExportOffset;
+    data.exports.clear();
 
-    for (int32_t i = 0; i < header.ExportCount; ++i) {
-        Export exportData;
+    for (int32_t i = 0; i < data.header.ExportCount; ++i) {
+        UassetData::Export exportData;
 
         exportData.classIndex = readInt32();
         exportData.superIndex = readInt32();
 
-        if (header.FileVersionUE4 >= 0x00AD) { // VER_UE4_TEMPLATEINDEX_IN_COOKED_EXPORTS
+        if (data.header.FileVersionUE4 >= 0x00AD) { // VER_UE4_TEMPLATEINDEX_IN_COOKED_EXPORTS
             exportData.templateIndex = readInt32();
         }
         else {
@@ -580,39 +544,38 @@ void Uasset::readExports() {
         exportData.outerIndex = readInt32();
         int32_t objectNameIdx = readInt32();
         exportData.objectName = resolveFName(objectNameIdx);
-
-        currentIdx += 4;
+        currentIdx += 4; // undocumented
         exportData.objectFlags = readUint32();
         exportData.serialSize = readInt64Export();
         exportData.serialOffset = readInt64Export();
         exportData.bForcedExport = readInt32();
         exportData.bNotForClient = readInt32();
         exportData.bNotForServer = readInt32();
-        exportData.packageGuid = readGuidString(); // Use the corrected method
+        exportData.packageGuid = readGuid();
         exportData.packageFlags = readUint32();
 
-        if (header.FileVersionUE4 >= 0x00AC) { // VER_UE4_LOAD_FOR_EDITOR_GAME
+        if (data.header.FileVersionUE4 >= 0x00AC) { // VER_UE4_LOAD_FOR_EDITOR_GAME
             exportData.bNotAlwaysLoadedForEditorGame = readInt32();
         }
         else {
             exportData.bNotAlwaysLoadedForEditorGame = 0;
         }
 
-        if (header.FileVersionUE4 >= 0x00AE) { // VER_UE4_COOKED_ASSETS_IN_EDITOR_SUPPORT
+        if (data.header.FileVersionUE4 >= 0x00AE) { // VER_UE4_COOKED_ASSETS_IN_EDITOR_SUPPORT
             exportData.bIsAsset = readInt32();
         }
         else {
             exportData.bIsAsset = 0;
         }
 
-        if (header.FileVersionUE5 >= 0x0197) { // VER_UE5_OPTIONAL_RESOURCES
+        if (data.header.FileVersionUE5 >= 0x0197) { // VER_UE5_OPTIONAL_RESOURCES
             exportData.bGeneratePublicHash = readInt32();
         }
         else {
             exportData.bGeneratePublicHash = 0;
         }
 
-        if (header.FileVersionUE4 >= 0x0194) { // VER_UE4_PRELOAD_DEPENDENCIES_IN_COOKED_EXPORTS
+        if (data.header.FileVersionUE4 >= 0x0194) { // VER_UE4_PRELOAD_DEPENDENCIES_IN_COOKED_EXPORTS
             exportData.firstExportDependency = readInt32();
             exportData.serializationBeforeSerializationDependencies = readInt32();
             exportData.createBeforeSerializationDependencies = readInt32();
@@ -627,28 +590,27 @@ void Uasset::readExports() {
             exportData.createBeforeCreateDependencies = 0;
         }
 
-        exports.push_back(exportData);
+        data.exports.push_back(exportData);
     }
 }
 
-
 void Uasset::readThumbnails() {
-    currentIdx = header.ThumbnailTableOffset;
+    currentIdx = data.header.ThumbnailTableOffset;
 
     int32_t count = readInt32();
-    thumbnailsIndex.clear();
-    thumbnails.clear();
+    data.thumbnailsIndex.clear();
+    data.thumbnails.clear();
 
     for (int32_t idx = 0; idx < count; ++idx) {
         ThumbnailIndex index;
         index.AssetClassName = readFString();
         index.ObjectPathWithoutPackageName = readFString();
         index.FileOffset = readInt32();
-        thumbnailsIndex.push_back(index);
+        data.thumbnailsIndex.push_back(index);
     }
 
     for (int32_t idx = 0; idx < count; ++idx) {
-        currentIdx = thumbnailsIndex[idx].FileOffset;
+        currentIdx = data.thumbnailsIndex[idx].FileOffset;
 
         Thumbnail thumbnail;
         thumbnail.ImageWidth = readInt32();
@@ -665,24 +627,24 @@ void Uasset::readThumbnails() {
             thumbnail.ImageData = readCountBytes(thumbnail.ImageSizeData);
         }
 
-        thumbnails.push_back(thumbnail);
+        data.thumbnails.push_back(thumbnail);
     }
 }
 
 void Uasset::readAssetRegistryData() {
-    currentIdx = header.AssetRegistryDataOffset;
+    currentIdx = data.header.AssetRegistryDataOffset;
 
-    int32_t nextOffset = header.TotalHeaderSize;
-    if (header.WorldTileInfoDataOffset > 0) {
-        nextOffset = header.WorldTileInfoDataOffset;
+    int32_t nextOffset = data.header.TotalHeaderSize;
+    if (data.header.WorldTileInfoDataOffset > 0) {
+        nextOffset = data.header.WorldTileInfoDataOffset;
     }
 
-    assetRegistryData.size = nextOffset - header.AssetRegistryDataOffset;
+    data.assetRegistryData.size = nextOffset - data.header.AssetRegistryDataOffset;
 
-    assetRegistryData.DependencyDataOffset = readInt64();
+    data.assetRegistryData.DependencyDataOffset = readInt64();
 
     int32_t count = readInt32();
-    assetRegistryData.data.clear();
+    data.assetRegistryData.data.clear();
     for (int32_t idx = 0; idx < count; ++idx) {
         AssetRegistryEntry entry;
         entry.ObjectPath = readFString();
@@ -696,11 +658,9 @@ void Uasset::readAssetRegistryData() {
             entry.Tags.push_back(tag);
         }
 
-        assetRegistryData.data.push_back(entry);
+        data.assetRegistryData.data.push_back(entry);
     }
 }
-
-
 
 std::vector<uint8_t> Uasset::readCountBytes(int32_t count) {
     if (currentIdx + count > bytesPtr->size()) {
@@ -768,9 +728,6 @@ int64_t Uasset::readInt64Export() {
         (int64_t(b4) << 32) | (int64_t(b5) << 40) | (int64_t(b6) << 48) | (int64_t(b7) << 56));
 }
 
-
-
-
 std::string Uasset::readFString() {
     int32_t length = readInt32();
     if (length == 0) return "";
@@ -781,7 +738,8 @@ std::string Uasset::readFString() {
         std::string str((*bytesPtr).begin() + currentIdx, (*bytesPtr).begin() + currentIdx + length - 1);
         currentIdx += length;
         return str;
-    } else {
+    }
+    else {
         length = -length * 2;
         if (currentIdx + length > bytesPtr->size()) {
             throw ParseException("Out of bounds read (FString)");
@@ -807,10 +765,17 @@ std::string Uasset::readGuid() {
     return guidToString(guid);
 }
 
-void printImports(const Uasset& uasset) {
+std::string Uasset::resolveFName(int32_t idx) {
+    if (idx >= 0 && idx < data.names.size()) {
+        return data.names[idx].Name;
+    }
+    return "";
+}
+
+void printImports(const UassetData& data) {
     std::cout << "Imports:" << std::endl;
-    for (size_t i = 0; i < uasset.imports.size(); ++i) {
-        const auto& importA = uasset.imports[i];
+    for (size_t i = 0; i < data.imports.size(); ++i) {
+        const auto& importA = data.imports[i];
         std::cout << "Import #" << (i + 1) << ":" << std::endl;
         std::cout << "  classPackage: " << importA.classPackage << std::endl;
         std::cout << "  className: " << importA.className << std::endl;
@@ -821,10 +786,10 @@ void printImports(const Uasset& uasset) {
     }
 }
 
-void printExports(const Uasset& uasset) {
+void printExports(const UassetData& data) {
     std::cout << "Exports:" << std::endl;
-    for (size_t i = 0; i < uasset.exports.size(); ++i) {
-        const auto& exportA = uasset.exports[i];
+    for (size_t i = 0; i < data.exports.size(); ++i) {
+        const auto& exportA = data.exports[i];
         std::cout << "Export #" << (i + 1) << ":" << std::endl;
         std::cout << "  classIndex: " << exportA.classIndex << std::endl;
         std::cout << "  superIndex: " << exportA.superIndex << std::endl;
@@ -853,6 +818,55 @@ void printExports(const Uasset& uasset) {
     }
 }
 
+void printThumbnails(const UassetData& data) {
+    std::cout << "Thumbnails:" << std::endl;
+    for (const auto& thumbnail : data.thumbnails) {
+        std::cout << "  Width: " << thumbnail.ImageWidth << std::endl;
+        std::cout << "  Height: " << thumbnail.ImageHeight << std::endl;
+        std::cout << "  Format: " << thumbnail.ImageFormat << std::endl;
+        std::cout << "  Data Size: " << thumbnail.ImageSizeData << std::endl;
+    }
+}
+
+void printAssetRegistryData(const UassetData& data) {
+    std::cout << "Asset Registry Data Size: " << data.assetRegistryData.size << std::endl;
+    std::cout << "Dependency Data Offset: " << data.assetRegistryData.DependencyDataOffset << std::endl;
+
+    for (const auto& entry : data.assetRegistryData.data) {
+        std::cout << "Object Path: " << entry.ObjectPath << std::endl;
+        std::cout << "Object Class Name: " << entry.ObjectClassName << std::endl;
+        for (const auto& tag : entry.Tags) {
+            std::cout << "  Tag Key: " << tag.Key << ", Tag Value: " << tag.Value << std::endl;
+        }
+    }
+}
+
+void printUassetData(const UassetData& data) {
+    std::cout << "Header: " << data.header.EPackageFileTag << std::endl;
+    std::cout << "Number of names: " << data.names.size() << std::endl;
+    std::cout << "Number of imports: " << data.imports.size() << std::endl;
+    std::cout << "Number of exports: " << data.exports.size() << std::endl;
+
+    // Print names
+    for (const auto& name : data.names) {
+        std::cout << "Name: " << name.Name << std::endl;
+        std::cout << "NonCasePreservingHash: " << name.NonCasePreservingHash << std::endl;
+        std::cout << "CasePreservingHash: " << name.CasePreservingHash << std::endl;
+    }
+
+    // Print imports
+    printImports(data);
+
+    // Print exports
+    printExports(data);
+
+    // Print thumbnails
+    printThumbnails(data);
+
+    // Print asset registry data
+    printAssetRegistryData(data);
+}
+
 int main() {
     std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_FrontEndPlayerController.uasset", std::ios::binary);
 
@@ -868,48 +882,8 @@ int main() {
         return 1;
     }
 
-    // Access parsed data
-    std::cout << "Header: " << uasset.header.EPackageFileTag << std::endl;
-    std::cout << "Number of names: " << uasset.names.size() << std::endl;
-    std::cout << "Number of imports: " << uasset.imports.size() << std::endl;
-    std::cout << "Number of exports: " << uasset.exports.size() << std::endl;
+    // Print all data
+    printUassetData(uasset.data);
 
-    // Print names
-    for (const auto& name : uasset.names) {
-        std::cout << std::endl;
-        std::cout << "Name: " << name.Name << std::endl;
-        std::cout << "NonCasePreservingHash: " << name.NonCasePreservingHash << std::endl;
-        std::cout << "CasePreservingHash: " << name.CasePreservingHash << std::endl;
-    }
-
-    // Print imports
-    printImports(uasset);
-
-    // Print exports
-    printExports(uasset);
-
-    // Access and print thumbnail data
-    for (const auto& thumbnail : uasset.thumbnails) {
-        std::cout << "Thumbnail:" << std::endl;
-        std::cout << "  Width: " << thumbnail.ImageWidth << std::endl;
-        std::cout << "  Height: " << thumbnail.ImageHeight << std::endl;
-        std::cout << "  Format: " << thumbnail.ImageFormat << std::endl;
-        std::cout << "  Data Size: " << thumbnail.ImageSizeData << std::endl;
-    }
-    
-    // Access and print asset registry data
-    std::cout << "Asset Registry Data Size: " << uasset.assetRegistryData.size << std::endl;
-    std::cout << "Dependency Data Offset: " << uasset.assetRegistryData.DependencyDataOffset << std::endl;
-
-    for (const auto& entry : uasset.assetRegistryData.data) {
-        std::cout << "Object Path: " << entry.ObjectPath << std::endl;
-        std::cout << "Object Class Name: " << entry.ObjectClassName << std::endl;
-        for (const auto& tag : entry.Tags) {
-            std::cout << "  Tag Key: " << tag.Key << ", Tag Value: " << tag.Value << std::endl;
-        }
-    }
-
-    
-    
     return 0;
 }
