@@ -164,10 +164,12 @@ private:
     int32_t readInt32();
     uint32_t readUint32();
     int64_t readInt64();
+    int64_t readInt64Export();
     uint64_t readUint64();
     std::string readFStringAsUint64();
     std::string readFString();
     std::string readGuid();
+    std::string readGuidString();
 
     bool readHeader();
     void readNames();
@@ -200,7 +202,7 @@ bool Uasset::parse(const std::vector<uint8_t>& bytes) {
         }
 
         readImports();
-//        readExports();
+        readExports();
 
         return true;
     } catch (const ParseException& e) {
@@ -500,43 +502,94 @@ uint64_t Uasset::readUint64() {
 }
 
 
+std::string Uasset::readGuidString() {
+    if (currentIdx + 16 > bytesPtr->size()) {
+        throw ParseException("Out of bounds read (GuidString)");
+    }
+
+    std::ostringstream ss;
+    for (int i = 0; i < 16; ++i) {
+        if (i == 4 || i == 6 || i == 8 || i == 10)
+            ss << '-';
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*bytesPtr)[currentIdx + i]);
+    }
+    currentIdx += 16;
+    std::string guid = ss.str();
+    std::transform(guid.begin(), guid.end(), guid.begin(), ::toupper);
+    return guid;
+}
+
 void Uasset::readExports() {
     currentIdx = header.ExportOffset;
+    exports.clear();
+
     for (int32_t i = 0; i < header.ExportCount; ++i) {
         Export exportData;
+
         exportData.classIndex = readInt32();
         exportData.superIndex = readInt32();
-        exportData.templateIndex = readInt32();
+
+        if (header.FileVersionUE4 >= 0x00AD) { // VER_UE4_TEMPLATEINDEX_IN_COOKED_EXPORTS
+            exportData.templateIndex = readInt32();
+        }
+        else {
+            exportData.templateIndex = 0;
+        }
+
         exportData.outerIndex = readInt32();
-        exportData.objectName = readFString();
+        int32_t objectNameIdx = readInt32();
+        exportData.objectName = resolveFName(objectNameIdx);
+
+        currentIdx += 4;
         exportData.objectFlags = readUint32();
-        exportData.serialSize = readInt64();
-        exportData.serialOffset = readInt64();
+        exportData.serialSize = readInt64Export();
+        exportData.serialOffset = readInt64Export();
         exportData.bForcedExport = readInt32();
         exportData.bNotForClient = readInt32();
         exportData.bNotForServer = readInt32();
-        exportData.packageGuid = readFString();
+        exportData.packageGuid = readGuidString(); // Use the corrected method
         exportData.packageFlags = readUint32();
-        exportData.bNotAlwaysLoadedForEditorGame = readInt32();
-        exportData.bIsAsset = readInt32();
-        exportData.bGeneratePublicHash = readInt32();
-        exportData.firstExportDependency = readInt32();
-        exportData.serializationBeforeSerializationDependencies = readInt32();
-        exportData.createBeforeSerializationDependencies = readInt32();
-        exportData.serializationBeforeCreateDependencies = readInt32();
-        exportData.createBeforeCreateDependencies = readInt32();
 
-        // Reading export data
-        if (exportData.serialSize > 0) {
-            currentIdx = exportData.serialOffset;
-            std::string nodeNameRef = readFString();
-            exportData.data.push_back(nodeNameRef);
-            uint32_t flags = readUint32();
-            exportData.data.push_back(std::to_string(flags));
+        if (header.FileVersionUE4 >= 0x00AC) { // VER_UE4_LOAD_FOR_EDITOR_GAME
+            exportData.bNotAlwaysLoadedForEditorGame = readInt32();
         }
+        else {
+            exportData.bNotAlwaysLoadedForEditorGame = 0;
+        }
+
+        if (header.FileVersionUE4 >= 0x00AE) { // VER_UE4_COOKED_ASSETS_IN_EDITOR_SUPPORT
+            exportData.bIsAsset = readInt32();
+        }
+        else {
+            exportData.bIsAsset = 0;
+        }
+
+        if (header.FileVersionUE5 >= 0x0197) { // VER_UE5_OPTIONAL_RESOURCES
+            exportData.bGeneratePublicHash = readInt32();
+        }
+        else {
+            exportData.bGeneratePublicHash = 0;
+        }
+
+        if (header.FileVersionUE4 >= 0x0194) { // VER_UE4_PRELOAD_DEPENDENCIES_IN_COOKED_EXPORTS
+            exportData.firstExportDependency = readInt32();
+            exportData.serializationBeforeSerializationDependencies = readInt32();
+            exportData.createBeforeSerializationDependencies = readInt32();
+            exportData.serializationBeforeCreateDependencies = readInt32();
+            exportData.createBeforeCreateDependencies = readInt32();
+        }
+        else {
+            exportData.firstExportDependency = 0;
+            exportData.serializationBeforeSerializationDependencies = 0;
+            exportData.createBeforeSerializationDependencies = 0;
+            exportData.serializationBeforeCreateDependencies = 0;
+            exportData.createBeforeCreateDependencies = 0;
+        }
+
         exports.push_back(exportData);
     }
 }
+
 
 uint16_t Uasset::readUint16() {
     if (currentIdx + sizeof(uint16_t) > bytesPtr->size()) {
@@ -577,6 +630,24 @@ int64_t Uasset::readInt64() {
     currentIdx += sizeof(val);
     return val;
 }
+
+int64_t Uasset::readInt64Export() {
+    if (currentIdx + sizeof(int64_t) > bytesPtr->size()) {
+        throw std::runtime_error("Out of bounds read (int64)");
+    }
+    uint8_t b0 = (*bytesPtr)[currentIdx];
+    uint8_t b1 = (*bytesPtr)[currentIdx + 1];
+    uint8_t b2 = (*bytesPtr)[currentIdx + 2];
+    uint8_t b3 = (*bytesPtr)[currentIdx + 3];
+    uint8_t b4 = (*bytesPtr)[currentIdx + 4];
+    uint8_t b5 = (*bytesPtr)[currentIdx + 5];
+    uint8_t b6 = (*bytesPtr)[currentIdx + 6];
+    uint8_t b7 = (*bytesPtr)[currentIdx + 7];
+    currentIdx += sizeof(int64_t);
+    return (int64_t(b0) | (int64_t(b1) << 8) | (int64_t(b2) << 16) | (int64_t(b3) << 24) |
+        (int64_t(b4) << 32) | (int64_t(b5) << 40) | (int64_t(b6) << 48) | (int64_t(b7) << 56));
+}
+
 
 
 
@@ -630,6 +701,37 @@ void printImports(const Uasset& uasset) {
     }
 }
 
+void printExports(const Uasset& uasset) {
+    std::cout << "Exports:" << std::endl;
+    for (size_t i = 0; i < uasset.exports.size(); ++i) {
+        const auto& exportA = uasset.exports[i];
+        std::cout << "Export #" << (i + 1) << ":" << std::endl;
+        std::cout << "  classIndex: " << exportA.classIndex << std::endl;
+        std::cout << "  superIndex: " << exportA.superIndex << std::endl;
+        std::cout << "  templateIndex: " << exportA.templateIndex << std::endl;
+        std::cout << "  outerIndex: " << exportA.outerIndex << std::endl;
+        std::cout << "  objectName: " << exportA.objectName << std::endl;
+        std::cout << "  objectFlags: " << exportA.objectFlags << std::endl;
+        std::cout << "  serialSize: " << exportA.serialSize << std::endl;
+        std::cout << "  serialOffset: " << exportA.serialOffset << std::endl;
+        std::cout << "  bForcedExport: " << exportA.bForcedExport << std::endl;
+        std::cout << "  bNotForClient: " << exportA.bNotForClient << std::endl;
+        std::cout << "  bNotForServer: " << exportA.bNotForServer << std::endl;
+        std::cout << "  packageGuid: " << exportA.packageGuid << std::endl;
+        std::cout << "  packageFlags: " << exportA.packageFlags << std::endl;
+        std::cout << "  bNotAlwaysLoadedForEditorGame: " << exportA.bNotAlwaysLoadedForEditorGame << std::endl;
+        std::cout << "  bIsAsset: " << exportA.bIsAsset << std::endl;
+        std::cout << "  bGeneratePublicHash: " << exportA.bGeneratePublicHash << std::endl;
+        std::cout << "  firstExportDependency: " << exportA.firstExportDependency << std::endl;
+        std::cout << "  serializationBeforeSerializationDependencies: " << exportA.serializationBeforeSerializationDependencies << std::endl;
+        std::cout << "  createBeforeSerializationDependencies: " << exportA.createBeforeSerializationDependencies << std::endl;
+        std::cout << "  serializationBeforeCreateDependencies: " << exportA.serializationBeforeCreateDependencies << std::endl;
+        std::cout << "  createBeforeCreateDependencies: " << exportA.createBeforeCreateDependencies << std::endl;
+        for (size_t j = 0; j < exportA.data.size(); ++j) {
+            std::cout << "  data[" << j << "]: " << exportA.data[j] << std::endl;
+        }
+    }
+}
 
 int main() {
     std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_FrontEndPlayerController.uasset", std::ios::binary);
@@ -663,5 +765,7 @@ int main() {
     // Print imports
     printImports(uasset);
 
+    // Print exports
+    printExports(uasset);
     return 0;
 }
