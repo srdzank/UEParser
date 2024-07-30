@@ -128,6 +128,7 @@ struct UassetData {
         int32_t serializationBeforeCreateDependencies;
         int32_t createBeforeCreateDependencies;
         std::vector<std::string> data;
+        std::vector<uint8_t> chunkData;
     };
 
     struct Name {
@@ -210,7 +211,7 @@ private:
     std::string readFString();
     std::string readGuid();
     std::vector<uint8_t> readCountBytes(int32_t count);
-
+    
     void readAssetRegistryData();
     bool readHeader();
     void readNames();
@@ -220,6 +221,7 @@ private:
     void readThumbnails();
     std::string resolveFName(int32_t idx);
 };
+
 
 bool Uasset::parse(const std::vector<uint8_t>& bytes) {
     currentIdx = 0;
@@ -531,10 +533,10 @@ void Uasset::readImports() {
 void Uasset::readExports() {
     currentIdx = data.header.ExportOffset;
     data.exports.clear();
-
+    size_t prevCurrentIdx = currentIdx;
     for (int32_t i = 0; i < data.header.ExportCount; ++i) {
+        currentIdx = prevCurrentIdx + i * 96;
         UassetData::Export exportData;
-
         exportData.classIndex = readInt32();
         exportData.superIndex = readInt32();
 
@@ -593,6 +595,12 @@ void Uasset::readExports() {
             exportData.serializationBeforeCreateDependencies = 0;
             exportData.createBeforeCreateDependencies = 0;
         }
+
+        // Read the export data chunk
+        size_t previousIdx = currentIdx;
+        currentIdx = exportData.serialOffset;
+        exportData.chunkData = readCountBytes(exportData.serialSize);
+        currentIdx = previousIdx; // Reset index to continue reading next export
 
         data.exports.push_back(exportData);
     }
@@ -986,7 +994,8 @@ void printUassetData(const UassetData& data) {
 }
 
 int main() {
-    std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_FrontEndPlayerController.uasset", std::ios::binary);
+//    std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_FrontEndPlayerController.uasset", std::ios::binary);
+    std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_SandWorldPlayerController.uasset", std::ios::binary);
 
     if (!file) {
         std::cerr << "Failed to open file" << std::endl;
