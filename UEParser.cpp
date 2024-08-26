@@ -316,6 +316,9 @@ private:
 	void processNone(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processInputKeyDelegateBindings(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDelegateReference(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processMemberReference(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processMemberParent(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processMemberName(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processFunctionReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbIsPureFunc(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodePosX(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -844,6 +847,15 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "bAllowDeletion") {
 			processbAllowDeletion(exportData, exportDataIdx);
 		}
+		else if (structureType == "MemberReference") {
+			processMemberReference(exportData, exportDataIdx);
+		}
+		else if (structureType == "MemberParent") {
+			processMemberParent(exportData, exportDataIdx);
+		}
+		else if (structureType == "MemberName") {
+			processMemberName(exportData, exportDataIdx);
+		}
 		else {
 			processDefault(exportData, exportDataIdx);
 		}
@@ -946,6 +958,16 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "bCommentBubblePinned") {
 		return "bCommentBubblePinned";
 	}
+	else if (objectClass == "MemberReference") {
+		return "MemberReference";
+	}
+	else if (objectClass == "MemberParent") {
+		return "MemberParent";
+	}
+	else if (objectClass == "MemberName") {
+		return "MemberName";
+	}
+
 	else {
 		return "Unknown";
 	}
@@ -1098,17 +1120,17 @@ void Uasset::processNone(UassetData::Export& exportData, size_t& exportDataIdx) 
 		// Example:
 
 	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
+	//property.PropertyName = resolveFName(readInt32());
+	//exportDataIdx += 4;
 
-	// Add more logic specific ...
+	//// Add more logic specific ...
 
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
+	//// Add the property to the export's properties vector
+	//exportData.properties.push_back(property);
 
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
+	//// Check for end marker
+	//if (property.PropertyName == "None") {
+	//}
 }
 
 void Uasset::processInputKeyDelegateBindings(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1142,20 +1164,51 @@ void Uasset::processDelegateReference(UassetData::Export& exportData, size_t& ex
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
-
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
 }
+
+
+void Uasset::processMemberReference(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	bool value = readByte();
+	exportDataIdx += 1;
+}
+
+
+void Uasset::processMemberParent(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	bool value = readByte();
+	exportDataIdx += 1;
+	readInt32();
+	exportDataIdx += 4;
+}
+
+void Uasset::processMemberName(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	bool value = readByte();
+	exportDataIdx += 1;
+	std::string strvalue = resolveFName(readInt64());
+	exportDataIdx += 8;
+}
+
+
 
 void Uasset::processFunctionReference(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
