@@ -311,12 +311,18 @@ private:
 	void processUberGraphFrame(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processSchema(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbCommentBubbleVisible_InDetailsPanel(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbCommentBubbleVisible(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbCommentBubblePinned(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNone(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processInputKeyDelegateBindings(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDelegateReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processFunctionReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbIsPureFunc(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodePosX(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processNodePosY(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processNodeWidth(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processNodeHeight(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processNodeComment(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processCustomFunctionName(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processEventReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processExtraFlags(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -328,6 +334,7 @@ private:
 	void processRootNodes(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodes(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processGraphGuid(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processNodeGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDefault(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbAllowDeletion(UassetData::Export& exportData, size_t& exportDataIdx);
 	uint8_t readByte();
@@ -762,6 +769,12 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "bCommentBubbleVisible_InDetailsPanel") {
 			processbCommentBubbleVisible_InDetailsPanel(exportData, exportDataIdx);
 		}
+		else if (structureType == "bCommentBubbleVisible") {
+			processbCommentBubbleVisible(exportData, exportDataIdx);
+		}
+		else if (structureType == "bCommentBubblePinned") {
+			processbCommentBubblePinned(exportData, exportDataIdx);
+		}
 		else if (structureType == "None") {
 			processNone(exportData, exportDataIdx);
 		}
@@ -779,6 +792,18 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		}
 		else if (structureType == "NodePosX") {
 			processNodePosX(exportData, exportDataIdx);
+		}
+		else if (structureType == "NodePosY") {
+			processNodePosY(exportData, exportDataIdx);
+		}
+		else if (structureType == "NodeWidth") {
+			processNodeWidth(exportData, exportDataIdx);
+		}
+		else if (structureType == "NodeHeight") {
+			processNodeHeight(exportData, exportDataIdx);
+		}
+		else if (structureType == "NodeComment") {
+			processNodeComment(exportData, exportDataIdx);
 		}
 		else if (structureType == "CustomFunctionName") {
 			processCustomFunctionName(exportData, exportDataIdx);
@@ -813,10 +838,12 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "GraphGuid") {
 			processGraphGuid(exportData, exportDataIdx);
 		}
+		else if (structureType == "NodeGuid") {
+			processNodeGuid(exportData, exportDataIdx);
+		}
 		else if (structureType == "bAllowDeletion") {
 			processbAllowDeletion(exportData, exportDataIdx);
 		}
-
 		else {
 			processDefault(exportData, exportDataIdx);
 		}
@@ -844,6 +871,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "bCommentBubbleVisible_InDetailsPanel") {
 		return "bCommentBubbleVisible_InDetailsPanel";
 	}
+	else if (objectClass == "bCommentBubbleVisible") {
+		return "bCommentBubbleVisible";
+	}
 	else if (objectClass == "None") {
 		return "None";
 	}
@@ -861,6 +891,18 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "NodePosX") {
 		return "NodePosX";
+	}
+	else if (objectClass == "NodePosY") {
+		return "NodePosY";
+	}
+	else if (objectClass == "NodeWidth") {
+		return "NodeWidth";
+	}
+	else if (objectClass == "NodeHeight") {
+		return "NodeHeight";
+	}
+	else if (objectClass == "NodeComment") {
+		return "NodeComment";
 	}
 	else if (objectClass == "CustomFunctionName") {
 		return "CustomFunctionName";
@@ -895,8 +937,14 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "GraphGuid") {
 		return "GraphGuid";
 	}
+	else if (objectClass == "NodeGuid") {
+		return "NodeGuid";
+	}
 	else if (objectClass == "bAllowDeletion") {
 		return "bAllowDeletion";
+	}
+	else if (objectClass == "bCommentBubblePinned") {
+		return "bCommentBubblePinned";
 	}
 	else {
 		return "Unknown";
@@ -1003,24 +1051,46 @@ void Uasset::processbCommentBubbleVisible_InDetailsPanel(UassetData::Export& exp
 	// Specific logic for processing  structures
 		// Read and process fields specific
 		// Example:
-	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportData.metadata.ObjectName = resolveFName(readInt64()); // class type 
 	exportDataIdx += 8;
-	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportData.metadata.OuterObject = resolveFName(readInt64()); // class value
 	exportDataIdx += 8;
 
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
+	readByte();
+	readByte();
 
 	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
 }
+void Uasset::processbCommentBubbleVisible(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64()); // class type 
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64()); // class value
+	exportDataIdx += 8;
+
+	readByte();
+	readByte();
+
+	// Check for end marker
+}
+void Uasset::processbCommentBubblePinned(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64()); // class type 
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64()); // class value
+	exportDataIdx += 8;
+
+	readByte();
+	readByte();
+
+	// Check for end marker
+}
+
+
 
 void Uasset::processNone(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
@@ -1142,18 +1212,66 @@ void Uasset::processNodePosX(UassetData::Export& exportData, size_t& exportDataI
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
 
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
+	readByte(); 
+	int value =readInt32(); // value of NodePosX
+	int stop = 0;
+}
 
-	// Add more logic specific ...
+void Uasset::processNodePosY(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
 
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
+	readByte();
+	int value = readInt32(); // value of NodePosY
+	int stop = 0;
+}
 
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
+void Uasset::processNodeWidth(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+
+	readByte();
+	int value = readInt32(); // value of Width
+	int stop = 0;
+}
+
+
+void Uasset::processNodeHeight(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+
+	readByte();
+	int value = readInt32(); // value of Height
+	int stop = 0;
+}
+
+void Uasset::processNodeComment(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+
+	readByte();
+	std::string value = readFString(); // Node comment
+	int stop = 0;
 }
 
 void Uasset::processCustomFunctionName(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1395,6 +1513,33 @@ void Uasset::processNodes(UassetData::Export& exportData, size_t& exportDataIdx)
 
 
 void Uasset::processGraphGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+
+	UassetData::Export::Property property;
+	property.PropertyName = resolveFName(readInt64()); //Guid 
+	exportDataIdx += 8;
+	std::string unknown1 = resolveFName(readInt64());
+	exportDataIdx += 8;
+	std::string unknown2 = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+
+	std::string GuidValue = readGuid();
+	exportDataIdx += 16;
+	exportData.properties.push_back(property);
+
+	// Check for end marker
+	if (property.PropertyName == "None") {
+	}
+}
+
+void Uasset::processNodeGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
 
 	exportData.metadata.ObjectName = resolveFName(readInt64());
