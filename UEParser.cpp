@@ -205,7 +205,7 @@ struct UassetData {
 		};
 
 		std::vector<Property> properties;
-
+		int internalIndex;
 
 	};
 
@@ -670,6 +670,7 @@ void Uasset::readExports() {
 	for (int32_t i = 0; i < data.header.ExportCount; ++i) {
 		currentIdx = prevCurrentIdx + i * 96;
 		UassetData::Export exportData;
+		exportData.internalIndex = i;
 		exportData.classIndex = readInt32();
 		exportData.superIndex = readInt32();
 
@@ -746,15 +747,19 @@ void Uasset::readExports() {
 void Uasset::readExportData(UassetData::Export& exportData) {
 	size_t exportDataIdx = exportData.serialOffset;
 	currentIdx = exportDataIdx;
+	exportData.metadata.ObjectClass = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportDataIdx = exportData.serialOffset;
+	currentIdx = exportDataIdx;
 
 	// Loop until all data is read
 	while (exportDataIdx < (size_t)(exportData.serialOffset + exportData.serialSize)) {
-		// Read ObjectMetadata
-		exportData.metadata.ObjectClass = resolveFName(readInt64());
+
+		std::string ObjectClass = resolveFName(readInt64());
 		exportDataIdx += 8;
 
 		// Determine the structure type for the current segment of data
-		std::string structureType = determineStructureType(exportData.metadata.ObjectClass);
+		std::string structureType = determineStructureType(ObjectClass);
 
 		// Process the data based on the structure type
 		if (structureType == "ParentClass") {
@@ -1264,10 +1269,16 @@ void Uasset::processNodePosX(UassetData::Export& exportData, size_t& exportDataI
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
+	UassetData::Export::Property property;
 
-	readByte(); 
-	int value =readInt32(); // value of NodePosX
-	int stop = 0;
+	readByte();
+	exportDataIdx += 1;
+
+	property.PropertyName = "NodePosX";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
+	exportData.properties.push_back(property);
+	exportDataIdx += 4;
 }
 
 void Uasset::processNodePosY(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1279,9 +1290,16 @@ void Uasset::processNodePosY(UassetData::Export& exportData, size_t& exportDataI
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
 
+	UassetData::Export::Property property;
+
 	readByte();
-	int value = readInt32(); // value of NodePosY
-	int stop = 0;
+	exportDataIdx += 1;
+
+	property.PropertyName = "NodePosY";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
+	exportData.properties.push_back(property);
+	exportDataIdx += 4;
 }
 
 void Uasset::processNodeWidth(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1293,9 +1311,17 @@ void Uasset::processNodeWidth(UassetData::Export& exportData, size_t& exportData
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
 
+	UassetData::Export::Property property;
+
 	readByte();
-	int value = readInt32(); // value of Width
-	int stop = 0;
+	exportDataIdx += 1;
+
+	property.PropertyName = "NodeWidth";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
+	exportData.properties.push_back(property);
+	exportDataIdx += 4;
+
 }
 
 
@@ -1308,9 +1334,16 @@ void Uasset::processNodeHeight(UassetData::Export& exportData, size_t& exportDat
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
 
+	UassetData::Export::Property property;
+
 	readByte();
-	int value = readInt32(); // value of Height
-	int stop = 0;
+	exportDataIdx += 1;
+
+	property.PropertyName = "NodeHeight";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
+	exportData.properties.push_back(property);
+	exportDataIdx += 4;
 }
 
 void Uasset::processNodeComment(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1322,9 +1355,16 @@ void Uasset::processNodeComment(UassetData::Export& exportData, size_t& exportDa
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
 
+	UassetData::Export::Property property;
+
 	readByte();
-	std::string value = readFString(); // Node comment
-	int stop = 0;
+	exportDataIdx += 1;
+
+	property.PropertyName = "NodeComment";
+	property.PropertyType = "FString";
+	property.stringValue = readFString();
+	exportData.properties.push_back(property);
+	exportDataIdx += 4;
 }
 
 void Uasset::processCustomFunctionName(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1542,25 +1582,26 @@ void Uasset::processNodes(UassetData::Export& exportData, size_t& exportDataIdx)
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
 
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt64());
+	resolveFName(readInt64());
 	exportDataIdx += 8;
 	readByte();
 	exportDataIdx += 1;
-	int countArray = readInt32(); // number of nodes items
-	exportDataIdx += 4;
-	std::vector<int> nodesList;
-	for (int i = 0; i < countArray; i++) {
-		int node = readInt32(); // node item value
-		nodesList.push_back(node);
-		exportDataIdx += 4;
-	}
 
-	// Add the property to the export's properties vector
+	UassetData::Export::Property property;
+	property.PropertyName = "NumberOfNodes";
+	property.PropertyType = "int";
+	int count = readInt32();
+	property.intValue = count;
 	exportData.properties.push_back(property);
+	exportDataIdx += 4;
 
-	// Check for end marker
-	if (property.PropertyName == "None") {
+	for (int i = 0; i < count; i++) {
+		property.PropertyName = "Node["+ std::to_string(i)+"]";
+		property.PropertyType = "int";
+		property.intValue = readInt32();
+		exportData.properties.push_back(property);
+		exportDataIdx += 4;
+
 	}
 }
 
@@ -1583,13 +1624,10 @@ void Uasset::processGraphGuid(UassetData::Export& exportData, size_t& exportData
 	readByte();
 	exportDataIdx += 1;
 
-	std::string GuidValue = readGuid();
+	property.PropertyType = "FString";
+	property.stringValue = readGuid();
 	exportDataIdx += 16;
 	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
 }
 
 void Uasset::processNodeGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1610,13 +1648,10 @@ void Uasset::processNodeGuid(UassetData::Export& exportData, size_t& exportDataI
 	readByte();
 	exportDataIdx += 1;
 
-	std::string GuidValue = readGuid();
+	property.PropertyType = "FString";
+	property.stringValue = readGuid();
 	exportDataIdx += 16;
 	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
 }
 
 
@@ -1825,6 +1860,16 @@ std::string Uasset::readFString() {
 	}
 }
 
+//std::string Uasset::readGuid() {
+//	uint8_t guid[16];
+//	if (currentIdx + sizeof(guid) > bytesPtr->size()) {
+//		throw ParseException("Out of bounds read (Guid)");
+//	}
+//	std::memcpy(guid, &(*bytesPtr)[currentIdx], sizeof(guid));
+//	currentIdx += sizeof(guid);
+//	return guidToString(guid);
+//}
+
 std::string Uasset::readGuid() {
 	uint8_t guid[16];
 	if (currentIdx + sizeof(guid) > bytesPtr->size()) {
@@ -1832,8 +1877,33 @@ std::string Uasset::readGuid() {
 	}
 	std::memcpy(guid, &(*bytesPtr)[currentIdx], sizeof(guid));
 	currentIdx += sizeof(guid);
-	return guidToString(guid);
+
+	// Convert the GUID to the correct string format
+	std::ostringstream ss;
+	ss << std::hex << std::setfill('0');
+
+	// Handle endianess
+	ss << std::setw(2) << static_cast<int>(guid[3])
+		<< std::setw(2) << static_cast<int>(guid[2])
+		<< std::setw(2) << static_cast<int>(guid[1])
+		<< std::setw(2) << static_cast<int>(guid[0]) << '-';
+
+	ss << std::setw(2) << static_cast<int>(guid[5])
+		<< std::setw(2) << static_cast<int>(guid[4]) << '-';
+
+	ss << std::setw(2) << static_cast<int>(guid[7])
+		<< std::setw(2) << static_cast<int>(guid[6]) << '-';
+
+	ss << std::setw(2) << static_cast<int>(guid[8])
+		<< std::setw(2) << static_cast<int>(guid[9]) << '-';
+
+	for (int i = 10; i < 16; ++i) {
+		ss << std::setw(2) << static_cast<int>(guid[i]);
+	}
+
+	return ss.str();
 }
+
 
 std::string Uasset::resolveFName(int64_t idx) {
 	if (idx >= 0 && idx < (int64_t)data.names.size()) {
@@ -2046,32 +2116,26 @@ void printUassetData(const UassetData& data) {
 			std::cout << "      OuterObject: " << exportA.metadata.OuterObject << std::endl;
 
 			std::cout << "    ObjectProperties:" << std::endl;
-			//for (size_t j = 0; j < exportA.properties.size(); ++j) {
-			//    std::cout << "      PropertyName: " << exportA.properties.at(j).PropertyName << std::endl;
-			//    std::cout << "      PropertyType: " << exportA.properties.at(j).PropertyType << std::endl;
-			//    //            std::cout << "      PropertyValue: " <<  exportA.properties.at(j).propertyValue << std::endl;
-			//}
-
-			std::cout << "    ChunkData:" << std::endl;
-			for (size_t i = 0; i < exportA.chunkData.size(); ++i) {
-				// Print the byte in hexadecimal format
-				std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(dataPtr[i]) << " ";
-
-				// Print a newline after every 8 bytes
-				if ((i + 1) % 8 == 0) {
-					std::cout << std::endl;
+			for (size_t j = 0; j < exportA.properties.size(); ++j) {
+			    std::cout << "      Name: " << exportA.properties.at(j).PropertyName << "     ";
+			    std::cout << " (" << exportA.properties.at(j).PropertyType << ") ";
+				if (exportA.properties.at(j).PropertyType == "bool") {
+					std::cout << " " << exportA.properties.at(j).boolValue << " ";
 				}
-			}
-
-			// If there are any remaining bytes after the last full row of 8, print a newline
-			if (exportA.chunkData.size() % 8 != 0) {
+				else if (exportA.properties.at(j).PropertyType == "int") {
+					std::cout << " " << exportA.properties.at(j).intValue << " ";
+				}
+				else if (exportA.properties.at(j).PropertyType == "float") {
+					std::cout << " " << exportA.properties.at(j).floatValue << " ";
+				}
+				else if (exportA.properties.at(j).PropertyType == "FString") {
+					std::cout << " " << exportA.properties.at(j).stringValue << " ";
+				}
 				std::cout << std::endl;
 			}
 		}
-
-
-
 	}
+
 
 	// Print thumbnail data
 	for (const auto& thumbnail : data.thumbnails) {
