@@ -319,8 +319,15 @@ private:
 	void processMemberReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processMemberParent(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processMemberName(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processBlueprintSystemVersion(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processSimpleConstructionScript(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processUbergraphPages(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processUberGraphFunction(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processPackage(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processFunctionGraphs(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processFunctionReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbIsPureFunc(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbIsConstFunc(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodePosX(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodePosY(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodeWidth(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -338,6 +345,7 @@ private:
 	void processNodes(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processGraphGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodeGuid(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processMemberGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDefault(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbAllowDeletion(UassetData::Export& exportData, size_t& exportDataIdx);
 	uint8_t readByte();
@@ -670,7 +678,7 @@ void Uasset::readExports() {
 	for (int32_t i = 0; i < data.header.ExportCount; ++i) {
 		currentIdx = prevCurrentIdx + i * 96;
 		UassetData::Export exportData;
-		exportData.internalIndex = i;
+		exportData.internalIndex = i+1;
 		exportData.classIndex = readInt32();
 		exportData.superIndex = readInt32();
 
@@ -751,7 +759,9 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 	exportDataIdx += 8;
 	exportDataIdx = exportData.serialOffset;
 	currentIdx = exportDataIdx;
-
+	if (exportData.internalIndex == 25) {
+		int stop = 0;
+	}
 	// Loop until all data is read
 	while (exportDataIdx < (size_t)(exportData.serialOffset + exportData.serialSize)) {
 
@@ -797,6 +807,9 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		}
 		else if (structureType == "bIsPureFunc") {
 			processbIsPureFunc(exportData, exportDataIdx);
+		}
+		else if (structureType == "bIsConstFunc") {
+			processbIsConstFunc(exportData, exportDataIdx);
 		}
 		else if (structureType == "NodePosX") {
 			processNodePosX(exportData, exportDataIdx);
@@ -861,7 +874,29 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "MemberName") {
 			processMemberName(exportData, exportDataIdx);
 		}
+		else if (structureType == "BlueprintSystemVersion") {
+			processBlueprintSystemVersion(exportData, exportDataIdx);
+		}
+		else if (structureType == "SimpleConstructionScript") {
+			processSimpleConstructionScript(exportData, exportDataIdx);
+		}
+		else if (structureType == "UbergraphPages") {
+			processUbergraphPages(exportData, exportDataIdx);
+		}
+		else if (structureType == "FunctionGraphs") {
+			processFunctionGraphs(exportData, exportDataIdx);
+		}
+		else if (structureType == "UberGraphFunction") {
+			processUberGraphFunction(exportData, exportDataIdx);
+		}
+		else if (structureType == "NodeGuid") {
+			processNodeGuid(exportData, exportDataIdx);
+		}
+		else if (structureType == "MemberGuid") {
+			processMemberGuid(exportData, exportDataIdx);
+		}
 		else {
+			break;
 			processDefault(exportData, exportDataIdx);
 		}
 
@@ -879,9 +914,28 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "DynamicBindingObjects") {
 		return "DynamicBindingObjects";
 	}
+	else if (objectClass == "Package") {
+		return "Package";
+	}
+	else if (objectClass == "bIsConstFunc") {
+		return "bIsConstFunc";
+	}
+	else if (objectClass == "UberGraphFunction") {
+		return "UberGraphFunction";
+	}
 	else if (objectClass == "UberGraphFrame") {
 		return "UberGraphFrame";
 	}
+	else if (objectClass == "FunctionGraphs") {
+		return "FunctionGraphs";
+	}
+	else if (objectClass == "SimpleConstructionScript") {
+		return "SimpleConstructionScript";
+	}
+	else if (objectClass == "UbergraphPages") {
+		return "UbergraphPages";
+	}
+
 	else if (objectClass == "Schema") {
 		return "Schema";
 	}
@@ -957,6 +1011,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "NodeGuid") {
 		return "NodeGuid";
 	}
+	else if (objectClass == "MemberGuid") {
+		return "MemberGuid";
+	}
 	else if (objectClass == "bAllowDeletion") {
 		return "bAllowDeletion";
 	}
@@ -972,7 +1029,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "MemberName") {
 		return "MemberName";
 	}
-
+	else if (objectClass == "BlueprintSystemVersion") {
+		return "BlueprintSystemVersion";
+	}
 	else {
 		return "Unknown";
 	}
@@ -987,31 +1046,10 @@ void Uasset::processParentClass(UassetData::Export& exportData, size_t& exportDa
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
-
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += sizeof(int32_t);
-
-	// Add more logic specific ...
-
-	// Read 8 bytes and print them in a row
-	for (int i = 0; i < 8; ++i) {
-		uint8_t byte = readByte();
-		printf("%02X ", byte);
-		exportDataIdx += sizeof(uint8_t);
-
-		// Print a newline after every 8 bytes
-		if ((i + 1) % 8 == 0) {
-			printf("\n");
-		}
-	}
-
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
+	readByte(); 
+	exportDataIdx += 1;
+	readInt32();
+	exportDataIdx += 4;
 }
 
 
@@ -1024,18 +1062,28 @@ void Uasset::processDynamicBindingObjects(UassetData::Export& exportData, size_t
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
 
+	readInt64();
+	exportDataIdx += 8;
+
+	readByte();
+	exportDataIdx += 1;
+
 	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
+	property.PropertyName = "DynamicBindingObjects";
+	property.PropertyType = "int";
+	int count = readInt32();
+	property.intValue = count;
+	exportData.properties.push_back(property);
 	exportDataIdx += 4;
 
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
+	for (int i = 0; i < count; i++) {
+		property.PropertyName = "DynamicBindingObject[" + std::to_string(i) + "]";
+		property.PropertyType = "int";
+		property.intValue = readInt32();
+		exportData.properties.push_back(property);
+		exportDataIdx += 4;
 	}
+
 }
 
 
@@ -1049,12 +1097,10 @@ void Uasset::processUberGraphFrame(UassetData::Export& exportData, size_t& expor
 	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
+	property.PropertyName = "UberGraphFrame";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
 	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
 	exportData.properties.push_back(property);
 
 	// Check for end marker
@@ -1169,6 +1215,10 @@ void Uasset::processDelegateReference(UassetData::Export& exportData, size_t& ex
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
+	readInt64();
+	readByte();
+	readInt64(); // read 8 zeros
+	readInt64(); // read 8 zeros
 }
 
 
@@ -1195,8 +1245,13 @@ void Uasset::processMemberParent(UassetData::Export& exportData, size_t& exportD
 	exportDataIdx += 8;
 	bool value = readByte();
 	exportDataIdx += 1;
-	readInt32();
+	
+	UassetData::Export::Property property;
+	property.PropertyName = "MemberParent(value)";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
 	exportDataIdx += 4;
+	exportData.properties.push_back(property);
 }
 
 void Uasset::processMemberName(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1209,33 +1264,164 @@ void Uasset::processMemberName(UassetData::Export& exportData, size_t& exportDat
 	exportDataIdx += 8;
 	bool value = readByte();
 	exportDataIdx += 1;
-	std::string strvalue = resolveFName(readInt64());
+
+	UassetData::Export::Property property;
+	property.PropertyName = "MemberName(value)";
+	property.PropertyType = "FString";
+	property.stringValue = resolveFName(readInt64());
 	exportDataIdx += 8;
+	exportData.properties.push_back(property);
 }
 
 
+void Uasset::processBlueprintSystemVersion(UassetData::Export& exportData, size_t& exportDataIdx) {
+
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+	UassetData::Export::Property property;
+	property.PropertyName = "BlueprintSystemVersion";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
+	exportDataIdx += 4;
+	exportData.properties.push_back(property);
+}
+
+void Uasset::processSimpleConstructionScript(UassetData::Export& exportData, size_t& exportDataIdx) {
+
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+	UassetData::Export::Property property;
+	property.PropertyName = "SimpleConstructionScript";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
+	exportDataIdx += 4;
+	exportData.properties.push_back(property);
+}
+
+void Uasset::processUbergraphPages(UassetData::Export& exportData, size_t& exportDataIdx) {
+
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readInt64();
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+
+	UassetData::Export::Property property;
+	property.PropertyName = "UbergraphPages";
+	property.PropertyType = "int";
+	int count = readInt32();
+	property.intValue = count;
+	exportData.properties.push_back(property);
+	exportDataIdx += 4;
+
+	for (int i = 0; i < count; i++) {
+		property.PropertyName = "UbergraphPage[" + std::to_string(i) + "]";
+		property.PropertyType = "int";
+		property.intValue = readInt32();
+		exportData.properties.push_back(property);
+		exportDataIdx += 4;
+	}
+}
+
+void Uasset::processUberGraphFunction(UassetData::Export& exportData, size_t& exportDataIdx) {
+
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readInt64();
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+
+	UassetData::Export::Property property;
+	property.PropertyName = "UbergraphPages";
+	property.PropertyType = "int";
+	int count = readInt32();
+	property.intValue = count;
+	exportData.properties.push_back(property);
+	exportDataIdx += 4;
+
+	for (int i = 0; i < count; i++) {
+		property.PropertyName = "UbergraphPage[" + std::to_string(i) + "]";
+		property.PropertyType = "int";
+		property.intValue = readInt32();
+		exportData.properties.push_back(property);
+		exportDataIdx += 4;
+	}
+}
+
+void Uasset::processPackage(UassetData::Export& exportData, size_t& exportDataIdx) {
+
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readInt64();
+	exportDataIdx += 8;
+	readInt64();
+	exportDataIdx += 8;
+	readInt64();
+	exportDataIdx += 8;
+	readInt32();
+	exportDataIdx += 4;
+
+}
+
+void Uasset::processFunctionGraphs(UassetData::Export& exportData, size_t& exportDataIdx) {
+
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readInt64();
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+
+	UassetData::Export::Property property;
+	property.PropertyName = "FunctionGraphs";
+	property.PropertyType = "int";
+	int count = readInt32();
+	property.intValue = count;
+	exportData.properties.push_back(property);
+	exportDataIdx += 4;
+
+	for (int i = 0; i < count; i++) {
+		property.PropertyName = "FunctionGraphs[" + std::to_string(i) + "]";
+		property.PropertyType = "int";
+		property.intValue = readInt32();
+		exportData.properties.push_back(property);
+		exportDataIdx += 4;
+	}
+}
 
 void Uasset::processFunctionReference(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
+
 	exportData.metadata.ObjectName = resolveFName(readInt64());
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
 
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
+	readInt64();
+	exportDataIdx += 8; // read MemberReference
+	readInt64();
+	exportDataIdx += 8;// read zero values
+	readInt64();
+	exportDataIdx += 8;// read zero values
+	readByte();
+	exportDataIdx += 1;
 }
 
 void Uasset::processbIsPureFunc(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1247,19 +1433,29 @@ void Uasset::processbIsPureFunc(UassetData::Export& exportData, size_t& exportDa
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
 
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
+	readByte();
+	exportDataIdx += 1;
+	readByte();
+	exportDataIdx += 1;
 
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
 }
+
+void Uasset::processbIsConstFunc(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+
+	readByte();
+	exportDataIdx += 1;
+	readByte();
+	exportDataIdx += 1;
+
+}
+
 
 void Uasset::processNodePosX(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
@@ -1631,6 +1827,30 @@ void Uasset::processGraphGuid(UassetData::Export& exportData, size_t& exportData
 }
 
 void Uasset::processNodeGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+
+	UassetData::Export::Property property;
+	property.PropertyName = resolveFName(readInt64()); //Guid 
+	exportDataIdx += 8;
+	std::string unknown1 = resolveFName(readInt64());
+	exportDataIdx += 8;
+	std::string unknown2 = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+
+	property.PropertyType = "FString";
+	property.stringValue = readGuid();
+	exportDataIdx += 16;
+	exportData.properties.push_back(property);
+}
+
+void Uasset::processMemberGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
 
 	exportData.metadata.ObjectName = resolveFName(readInt64());
