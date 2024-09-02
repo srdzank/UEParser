@@ -313,6 +313,8 @@ private:
 	void processbCommentBubbleVisible_InDetailsPanel(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbCommentBubbleVisible(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbCommentBubblePinned(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbIsEditable(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbSelfContext(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNone(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processInputKeyDelegateBindings(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDelegateReference(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -340,6 +342,7 @@ private:
 	void processExtraFlags(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processCustomClass(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processInputKey(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processKeyName(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processVariableReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbVisualizeComponent(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processComponentClass(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -348,6 +351,7 @@ private:
 	void processGraphGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodeGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processMemberGuid(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processEnabledState(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDefault(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbAllowDeletion(UassetData::Export& exportData, size_t& exportDataIdx);
 	uint8_t readByte();
@@ -761,7 +765,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 	exportDataIdx += 8;
 	exportDataIdx = exportData.serialOffset;
 	currentIdx = exportDataIdx;
-	if (exportData.internalIndex == 25) {
+	if (exportData.internalIndex == 56) {
 		int stop = 0;
 	}
 	// Loop until all data is read
@@ -780,6 +784,9 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "DynamicBindingObjects") {
 			processDynamicBindingObjects(exportData, exportDataIdx);
 		}
+		else if (structureType == "KeyName") {
+			processKeyName(exportData, exportDataIdx);
+		}
 		else if (structureType == "UberGraphFrame") {
 			processUberGraphFrame(exportData, exportDataIdx);
 		}
@@ -794,6 +801,12 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		}
 		else if (structureType == "bCommentBubblePinned") {
 			processbCommentBubblePinned(exportData, exportDataIdx);
+		}
+		else if (structureType == "bIsEditable") {
+			processbIsEditable(exportData, exportDataIdx);
+		}
+		else if (structureType == "bSelfContext") {
+			processbSelfContext(exportData, exportDataIdx);
 		}
 		else if (structureType == "None") {
 			processNone(exportData, exportDataIdx);
@@ -900,6 +913,9 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "MemberGuid") {
 			processMemberGuid(exportData, exportDataIdx);
 		}
+		else if (structureType == "EnabledState") {
+			processEnabledState(exportData, exportDataIdx);
+		}
 		else {
 			break;
 			processDefault(exportData, exportDataIdx);
@@ -918,6 +934,18 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "DynamicBindingObjects") {
 		return "DynamicBindingObjects";
+	}
+	else if (objectClass == "KeyName") {
+		return "KeyName";
+	}
+	else if (objectClass == "bIsEditable") {
+		return "bIsEditable";
+	}
+	else if (objectClass == "bSelfContext") {
+		return "bSelfContext";
+	}
+	else if (objectClass == "EnabledState") {
+		return "EnabledState";
 	}
 	else if (objectClass == "Package") {
 		return "Package";
@@ -1172,6 +1200,34 @@ void Uasset::processbCommentBubblePinned(UassetData::Export& exportData, size_t&
 }
 
 
+void Uasset::processbIsEditable(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64()); // class type 
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64()); // class value
+	exportDataIdx += 8;
+
+	readByte();
+	readByte();
+
+	// Check for end marker
+}
+void Uasset::processbSelfContext(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64()); // class type 
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64()); // class value
+	exportDataIdx += 8;
+
+	readByte();
+	readByte();
+
+	// Check for end marker
+}
 
 void Uasset::processNone(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
@@ -1639,19 +1695,14 @@ void Uasset::processExtraFlags(UassetData::Export& exportData, size_t& exportDat
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
-
+	readByte();
+	exportDataIdx += 1;
 	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
+	property.PropertyName = "ExtraFlagsValues";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
 	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
 	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
 }
 
 
@@ -1663,19 +1714,14 @@ void Uasset::processCustomClass(UassetData::Export& exportData, size_t& exportDa
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
-
+	readByte();
+	exportDataIdx += 1;
 	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
+	property.PropertyName = "CustomClass-Value";
+	property.PropertyType = "int";
+	property.intValue = readInt32();
 	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
 	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
 }
 
 void Uasset::processInputKey(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1688,18 +1734,38 @@ void Uasset::processInputKey(UassetData::Export& exportData, size_t& exportDataI
 	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
+	property.PropertyName = "InputKey";
+	property.PropertyType = "FString";
+	property.stringValue = resolveFName(readInt64());
+	exportDataIdx += 8;
 	exportData.properties.push_back(property);
 
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
+	readInt64();
+	exportDataIdx += 8;
+	readInt64();
+	exportDataIdx += 8;
+	readByte();
+
 }
+void Uasset::processKeyName(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+
+	UassetData::Export::Property property;
+	property.PropertyName = "KeyName";
+	property.PropertyType = "FString";
+	property.stringValue = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.properties.push_back(property);
+}
+
 
 void Uasset::processVariableReference(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
@@ -1709,19 +1775,10 @@ void Uasset::processVariableReference(UassetData::Export& exportData, size_t& ex
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
-
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
+	readInt64();
+	readInt64();
+	readInt64();
+	readByte();
 }
 
 void Uasset::processbVisualizeComponent(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1896,6 +1953,26 @@ void Uasset::processMemberGuid(UassetData::Export& exportData, size_t& exportDat
 	exportData.properties.push_back(property);
 }
 
+void Uasset::processEnabledState(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+
+	UassetData::Export::Property property;
+	property.PropertyName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	property.PropertyType = "FString";
+
+	readByte();
+	exportDataIdx += 1;
+
+	property.stringValue = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.properties.push_back(property);
+}
 
 void Uasset::processbAllowDeletion(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
