@@ -327,6 +327,8 @@ private:
 	void processFunctionGraphs(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processFunctionReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbIsPureFunc(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbOverrideFunction(UassetData::Export& exportData, size_t& exportDataIdx);
+	
 	void processbIsConstFunc(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodePosX(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodePosY(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -811,6 +813,9 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "bIsConstFunc") {
 			processbIsConstFunc(exportData, exportDataIdx);
 		}
+		else if (structureType == "bOverrideFunction") {
+			processbOverrideFunction(exportData, exportDataIdx);
+		}
 		else if (structureType == "NodePosX") {
 			processNodePosX(exportData, exportDataIdx);
 		}
@@ -919,6 +924,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "bIsConstFunc") {
 		return "bIsConstFunc";
+	}
+	else if (objectClass == "bOverrideFunction") {
+		return "bOverrideFunction";
 	}
 	else if (objectClass == "UberGraphFunction") {
 		return "UberGraphFunction";
@@ -1440,6 +1448,26 @@ void Uasset::processbIsPureFunc(UassetData::Export& exportData, size_t& exportDa
 
 }
 
+void Uasset::processbOverrideFunction(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectName = resolveFName(readInt64());
+	exportDataIdx += 8;
+	exportData.metadata.OuterObject = resolveFName(readInt64());
+	exportDataIdx += 8;
+
+	readByte();
+	exportDataIdx += 1;
+	readByte();
+	exportDataIdx += 1;
+
+}
+
+
+
+
+
 void Uasset::processbIsConstFunc(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
 		// Read and process fields specific
@@ -1571,10 +1599,13 @@ void Uasset::processCustomFunctionName(UassetData::Export& exportData, size_t& e
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
-
+	readByte();
+	exportDataIdx += 1;
 	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
+	property.PropertyName = "CustomFunctionName";
+	property.PropertyType = "FString";
+	property.stringValue = resolveFName(readInt64());
+	exportDataIdx += 8;
 
 	// Add more logic specific ...
 
@@ -1594,19 +1625,10 @@ void Uasset::processEventReference(UassetData::Export& exportData, size_t& expor
 	exportDataIdx += 8;
 	exportData.metadata.OuterObject = resolveFName(readInt64());
 	exportDataIdx += 8;
-
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
+	readInt64();
+	readInt64();
+	readInt64();
+	readByte();
 }
 
 void Uasset::processExtraFlags(UassetData::Export& exportData, size_t& exportDataIdx) {
