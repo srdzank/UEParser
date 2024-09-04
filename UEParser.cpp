@@ -158,11 +158,15 @@ struct UassetData {
 			float floatValue;
 			bool boolValue;
 			std::string stringValue;
+			std::vector<uint8_t> byteBuffer; 
+
 			Property() : PropertyName(""), PropertyType("") {}
 			~Property() {}
 
 			// Copy constructor
-			Property(const Property& other) : PropertyName(other.PropertyName), PropertyType(other.PropertyType) {
+			Property(const Property& other) : PropertyName(other.PropertyName), 
+				PropertyType(other.PropertyType) , 
+				byteBuffer(other.byteBuffer) {
 				if (PropertyType == "int") {
 					intValue = other.intValue;
 				}
@@ -185,6 +189,7 @@ struct UassetData {
 
 				PropertyName = other.PropertyName;
 				PropertyType = other.PropertyType;
+				byteBuffer = other.byteBuffer;
 
 				if (PropertyType == "int") {
 					intValue = other.intValue;
@@ -306,6 +311,13 @@ private:
 	void readExportData(UassetData::Export& exportData);
 	std::string determineStructureType(const std::string& objectClass);
 	void processParentClass(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processVarType(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processVarName(UassetData::Export& exportData, size_t& exportDataIdx);
+	
+	void processFriendlyName(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processCategory(UassetData::Export& exportData, size_t& exportDataIdx);
+
+	void processNewVariables(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDynamicBindingObjects(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processUberGraphFrame(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processSchema(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -316,6 +328,7 @@ private:
 	void processbIsEditable(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbSelfContext(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNone(UassetData::Export& exportData, size_t& exportDataIdx);
+	void detectPaddingAfterNone();
 	void processInputKeyDelegateBindings(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDelegateReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processMemberReference(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -349,6 +362,7 @@ private:
 	void processRootNodes(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodes(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processGraphGuid(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processVarGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodeGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processMemberGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processEnabledState(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -773,7 +787,11 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 	// Loop until all data is read
 	while (exportDataIdx < (size_t)(exportData.serialOffset + exportData.serialSize)) {
 
-		std::string ObjectClass = resolveFName(readInt64());
+		int64_t val = readInt64();
+		if (val == 0) {
+			continue;
+		}
+		std::string ObjectClass = resolveFName(val);
 		exportDataIdx += 8;
 
 		// Determine the structure type for the current segment of data
@@ -782,6 +800,21 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		// Process the data based on the structure type
 		if (structureType == "ParentClass") {
 			processParentClass(exportData, exportDataIdx);
+		}
+		else if (structureType == "VarType") {
+			processVarType(exportData, exportDataIdx);
+		}
+		else if (structureType == "VarName") {
+			processVarName(exportData, exportDataIdx);
+		}
+		else if (structureType == "Category") {
+			processCategory(exportData, exportDataIdx);
+		}
+		else if (structureType == "FriendlyName") {
+			processFriendlyName(exportData, exportDataIdx);
+		}
+		else if (structureType == "NewVariables") {
+			processNewVariables(exportData, exportDataIdx);
 		}
 		else if (structureType == "DynamicBindingObjects") {
 			processDynamicBindingObjects(exportData, exportDataIdx);
@@ -882,6 +915,9 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "GraphGuid") {
 			processGraphGuid(exportData, exportDataIdx);
 		}
+		else if (structureType == "VarGuid") {
+			processVarGuid(exportData, exportDataIdx);
+		}
 		else if (structureType == "NodeGuid") {
 			processNodeGuid(exportData, exportDataIdx);
 		}
@@ -945,6 +981,24 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "DynamicBindingObjects") {
 		return "DynamicBindingObjects";
+	}
+	else if (objectClass == "Category") {
+		return "Category";
+	}
+	else if (objectClass == "FriendlyName") {
+		return "FriendlyName";
+	}
+	else if (objectClass == "VarGuid") {
+		return "VarGuid";
+	}
+	else if (objectClass == "VarType") {
+		return "VarType";
+	}
+	else if (objectClass == "NewVariables") {
+		return "NewVariables";
+	}
+	else if (objectClass == "VarName") {
+		return "VarName";
 	}
 	else if (objectClass == "KeyName") {
 		return "KeyName";
@@ -1099,15 +1153,133 @@ void Uasset::processParentClass(UassetData::Export& exportData, size_t& exportDa
 		// Read and process fields specific
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	readInt64();
-	exportDataIdx += 8;
-	readByte(); 
-	exportDataIdx += 1;
-	readInt32(); //read value
-	exportDataIdx += 4;
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	int32_t value = 0;
+	if (exportData.metadata.ObjectType == "ObjectProperty") {
+		value = readInt32();
+	}
+	// add code to show value
 }
 
+void Uasset::processVarType(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64());
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "StructProperty") {
+		if(subType == "")
+		strValue = resolveFName(readInt64());
+		UassetData::Export::Property property;
+		property.PropertyName = subType;
+		property.PropertyType = "FString";
+		property.stringValue = "bytes";
+		property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+		exportData.properties.push_back(property);
+		currentIdx += size;
+	}
+	// add code to show value
+}
+
+
+
+void Uasset::processVarName(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "NameProperty") {
+		strValue = resolveFName(readInt64());
+		UassetData::Export::Property property;
+		property.PropertyName = "VarName";
+		property.PropertyType = "FString";
+		property.stringValue = strValue;
+		exportData.properties.push_back(property);
+	}
+	// add code to show value
+}
+
+
+void Uasset::processFriendlyName(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	size_t start = currentIdx;
+	size_t end = currentIdx + size;
+	if (exportData.metadata.ObjectType == "StrProperty") {
+		while (currentIdx < end) {
+			strValue = readFString();
+			UassetData::Export::Property property;
+			property.PropertyName = "FriendlyName";
+			property.PropertyType = "FString";
+			property.stringValue = strValue;
+			exportData.properties.push_back(property);
+		}
+	}
+	// add code to show value
+}
+
+void Uasset::processCategory(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	size_t start = currentIdx;
+	size_t end = currentIdx + size;
+
+	readInt32(); // unknown
+	readByte();  // unknown
+	std::string strValue = "";
+	
+	if (exportData.metadata.ObjectType == "TextProperty") {
+		while (currentIdx < end) {
+			strValue = readFString();
+			UassetData::Export::Property property;
+			property.PropertyName = "Category";
+			property.PropertyType = "FString";
+			property.stringValue = strValue;
+			exportData.properties.push_back(property);
+		}
+	}
+	// add code to show value
+}
+
+
+void Uasset::processNewVariables(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64()); // read subtype
+	int32_t value = 0;
+	if (exportData.metadata.ObjectType == "ArrayProperty") {
+		if (subType == "StructProperty") {
+			uint8_t flag = readByte();
+			value = readInt32();
+		}
+	}
+	else if (exportData.metadata.ObjectType == "StructProperty") {
+		if (subType == "BPVariableDescription") {
+			readInt64();
+			readInt64();
+			uint8_t flag = readByte();
+		}
+	}
+}
 
 void Uasset::processDynamicBindingObjects(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
@@ -1269,23 +1441,28 @@ void Uasset::processbSelfContext(UassetData::Export& exportData, size_t& exportD
 	// Check for end marker
 }
 
+// Function to detect padding after the None marker (9F 00 00 00 00 00 00 00)
+void Uasset::detectPaddingAfterNone() {
+	// Read until non-padding byte is found or the end of data
+	while (currentIdx < bytesPtr->size()) {
+		uint8_t byte = readByte();
+
+		// Padding bytes are often zeroes or repeated values (e.g., 0x00)
+		// This checks for zeroes specifically
+		if (byte != 0x00) {
+			// Move back one byte if a non-padding byte is found
+			currentIdx--;
+			break;
+		}
+	}
+}
+
+
 void Uasset::processNone(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
 		// Read and process fields specific
 		// Example:
-
-	UassetData::Export::Property property;
-	//property.PropertyName = resolveFName(readInt32());
-	//exportDataIdx += 4;
-
-	//// Add more logic specific ...
-
-	//// Add the property to the export's properties vector
-	//exportData.properties.push_back(property);
-
-	//// Check for end marker
-	//if (property.PropertyName == "None") {
-	//}
+	detectPaddingAfterNone();
 }
 
 void Uasset::processInputKeyDelegateBindings(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1390,66 +1567,70 @@ void Uasset::processMemberName(UassetData::Export& exportData, size_t& exportDat
 void Uasset::processBlueprintSystemVersion(UassetData::Export& exportData, size_t& exportDataIdx) {
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
-
-	readByte();
-	exportDataIdx += 1;
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();  // read flag
+	int32_t value = 0;
+	
+	if (exportData.metadata.ObjectType == "IntProperty") {
+		value = readInt32();
+	}
+    // add code to show value
 	UassetData::Export::Property property;
 	property.PropertyName = "BlueprintSystemVersion";
 	property.PropertyType = "int";
-	property.intValue = readInt32();
-	exportDataIdx += 4;
+	property.intValue = value;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processSimpleConstructionScript(UassetData::Export& exportData, size_t& exportDataIdx) {
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();  // read flag
+	int32_t value = 0;
 
-	readByte();
-	exportDataIdx += 1;
+	if (exportData.metadata.ObjectType == "ObjectProperty") {
+		value = readInt32();
+	}
+	// add code to show value
 	UassetData::Export::Property property;
 	property.PropertyName = "SimpleConstructionScript";
 	property.PropertyType = "int";
-	property.intValue = readInt32();
-	exportDataIdx += 4;
+	property.intValue = value;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processUbergraphPages(UassetData::Export& exportData, size_t& exportDataIdx) {
 
+	
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64()); // read subType
+	uint8_t flag = readByte();  // read flag
+	int32_t value = 0;
 
-	readInt64();
-	exportDataIdx += 8;
-	readByte();
-	exportDataIdx += 1;
+	if (exportData.metadata.ObjectType == "ArrayProperty") {
+		
+		if (subType == "ObjectProperty"){
+			UassetData::Export::Property property;
+			property.PropertyName = "UbergraphPages";
+			property.PropertyType = "int";
+			int count = readInt32();
+			property.intValue = count;
+			exportData.properties.push_back(property);
+			exportDataIdx += 4;
 
-	UassetData::Export::Property property;
-	property.PropertyName = "UbergraphPages";
-	property.PropertyType = "int";
-	int count = readInt32();
-	property.intValue = count;
-	exportData.properties.push_back(property);
-	exportDataIdx += 4;
-
-	for (int i = 0; i < count; i++) {
-		property.PropertyName = "UbergraphPage[" + std::to_string(i) + "]";
-		property.PropertyType = "int";
-		property.intValue = readInt32();
-		exportData.properties.push_back(property);
-		exportDataIdx += 4;
+			for (int i = 0; i < count; i++) {
+				property.PropertyName = "UbergraphPage[" + std::to_string(i) + "]";
+				property.PropertyType = "int";
+				property.intValue = readInt32();
+				exportData.properties.push_back(property);
+				exportDataIdx += 4;
+			}
+		}
+		else {
+			;
+		}
 	}
 }
 
@@ -1983,6 +2164,31 @@ void Uasset::processGraphGuid(UassetData::Export& exportData, size_t& exportData
 	exportDataIdx += 1;
 	
 	property.PropertyName = "GraphGuid";
+	property.PropertyType = "FString";
+	property.stringValue = readGuid();
+	exportDataIdx += 16;
+	exportData.properties.push_back(property);
+}
+
+void Uasset::processVarGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	exportDataIdx += 8;
+	//exportData.metadata.OuterObject = resolveFName(readInt64());
+	readInt64();
+	exportDataIdx += 8;
+
+	UassetData::Export::Property property;
+	property.PropertyName = resolveFName(readInt64()); //Guid 
+	exportDataIdx += 8;
+	std::string unknown1 = resolveFName(readInt64());
+	exportDataIdx += 8;
+	std::string unknown2 = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+	property.PropertyName = "VarGuid";
 	property.PropertyType = "FString";
 	property.stringValue = readGuid();
 	exportDataIdx += 16;
@@ -2577,6 +2783,14 @@ void printUassetData(const UassetData& data) {
 				}
 				else if (exportA.properties.at(j).PropertyType == "FString") {
 					std::cout << " " << exportA.properties.at(j).stringValue << " ";
+				}
+				// Print raw bytes in the buffer
+				if (!exportA.properties.at(j).byteBuffer.empty()) {
+					std::cout << " [Bytes: ";
+					for (const auto& byte : exportA.properties.at(j).byteBuffer) {
+						std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << " ";
+					}
+					std::cout << "]";
 				}
 				std::cout << std::endl;
 			}
