@@ -311,12 +311,19 @@ private:
 	void readExportData(UassetData::Export& exportData);
 	std::string determineStructureType(const std::string& objectClass);
 	void processParentClass(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processCategorySorting(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbLegacyNeedToPurgeSkelRefs(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processGeneratedClass(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processLastEditedDocuments(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processDefaultValue(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processVarType(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processVarName(UassetData::Export& exportData, size_t& exportDataIdx);
-	
+	void processPropertyFlags(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processFriendlyName(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processRepNotifyFunc(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processReplicationCondition(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processMetaDataArray(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processCategory(UassetData::Export& exportData, size_t& exportDataIdx);
-
 	void processNewVariables(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDynamicBindingObjects(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processUberGraphFrame(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -362,6 +369,7 @@ private:
 	void processRootNodes(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodes(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processGraphGuid(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processBlueprintGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processVarGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodeGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processMemberGuid(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -801,17 +809,44 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		if (structureType == "ParentClass") {
 			processParentClass(exportData, exportDataIdx);
 		}
+		else if (structureType == "CategorySorting") {
+			processCategorySorting(exportData, exportDataIdx);
+		}
+		else if (structureType == "GeneratedClass") {
+			processGeneratedClass(exportData, exportDataIdx);
+		}
+		else if (structureType == "bLegacyNeedToPurgeSkelRefs") {
+			processbLegacyNeedToPurgeSkelRefs(exportData, exportDataIdx);
+		}
+		else if (structureType == "LastEditedDocuments") {
+			processLastEditedDocuments(exportData, exportDataIdx);
+		}
 		else if (structureType == "VarType") {
 			processVarType(exportData, exportDataIdx);
+		}
+		else if (structureType == "DefaultValue") {
+			processDefaultValue(exportData, exportDataIdx);
 		}
 		else if (structureType == "VarName") {
 			processVarName(exportData, exportDataIdx);
 		}
+		else if (structureType == "PropertyFlags") {
+			processPropertyFlags(exportData, exportDataIdx);
+		}
 		else if (structureType == "Category") {
 			processCategory(exportData, exportDataIdx);
 		}
+		else if (structureType == "MetaDataArray") {
+			processMetaDataArray(exportData, exportDataIdx);
+		}
 		else if (structureType == "FriendlyName") {
 			processFriendlyName(exportData, exportDataIdx);
+		}
+		else if (structureType == "RepNotifyFunc") {
+			processRepNotifyFunc(exportData, exportDataIdx);
+		}
+		else if (structureType == "ReplicationCondition") {
+			processReplicationCondition(exportData, exportDataIdx);
 		}
 		else if (structureType == "NewVariables") {
 			processNewVariables(exportData, exportDataIdx);
@@ -915,6 +950,9 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "GraphGuid") {
 			processGraphGuid(exportData, exportDataIdx);
 		}
+		else if (structureType == "BlueprintGuid") {
+			processBlueprintGuid(exportData, exportDataIdx);
+		}
 		else if (structureType == "VarGuid") {
 			processVarGuid(exportData, exportDataIdx);
 		}
@@ -979,8 +1017,38 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	if (objectClass == "ParentClass") {
 		return "ParentClass";
 	}
+	else if (objectClass == "DefaultValue") {
+		return "DefaultValue";
+	}
+	else if (objectClass == "BlueprintGuid") {
+		return "BlueprintGuid";
+	}
+	else if (objectClass == "bLegacyNeedToPurgeSkelRefs") {
+		return "bLegacyNeedToPurgeSkelRefs";
+	}
+	else if (objectClass == "GeneratedClass") {
+		return "GeneratedClass";
+	}
+	else if (objectClass == "LastEditedDocuments") {
+		return "LastEditedDocuments";
+	}
+	else if (objectClass == "CategorySorting") {
+		return "CategorySorting";
+	}
 	else if (objectClass == "DynamicBindingObjects") {
 		return "DynamicBindingObjects";
+	}
+	else if (objectClass == "MetaDataArray") {
+		return "MetaDataArray";
+	}
+	else if (objectClass == "ReplicationCondition") {
+		return "ReplicationCondition";
+	}
+	else if (objectClass == "RepNotifyFunc") {
+		return "RepNotifyFunc";
+	}
+	else if (objectClass == "PropertyFlags") {
+		return "PropertyFlags";
 	}
 	else if (objectClass == "Category") {
 		return "Category";
@@ -1148,6 +1216,82 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 }
 
 
+void Uasset::processGeneratedClass(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "ObjectProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "GeneratedClass ";
+		property.PropertyType = "int";
+		property.intValue = readInt32();
+		exportData.properties.push_back(property);
+	}
+}
+
+
+void Uasset::processbLegacyNeedToPurgeSkelRefs(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "BoolProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "bLegacyNeedToPurgeSkelRefs ";
+		property.PropertyType = "bool";
+		property.boolValue = readByte();
+		exportData.properties.push_back(property);
+	}
+}
+
+void Uasset::processCategorySorting(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64());
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "ArrayProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "CategorySorting - " + subType;
+		property.PropertyType = "FString";
+		property.stringValue = "bytes";
+		property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+		exportData.properties.push_back(property);
+		currentIdx += size;
+	}
+}
+
+
+void Uasset::processLastEditedDocuments(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64());
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "ArrayProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "LastEditedDocuments - " + subType;
+		property.PropertyType = "FString";
+		property.stringValue = "bytes";
+		property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+		exportData.properties.push_back(property);
+		currentIdx += size;
+	}
+}
+
 void Uasset::processParentClass(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing structures
 		// Read and process fields specific
@@ -1161,6 +1305,26 @@ void Uasset::processParentClass(UassetData::Export& exportData, size_t& exportDa
 	}
 	// add code to show value
 }
+
+void Uasset::processDefaultValue(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "StrProperty") {
+		strValue = readFString();
+		UassetData::Export::Property property;
+		property.PropertyName = "DefaultValue";
+		property.PropertyType = "FString";
+		property.stringValue = strValue;
+		exportData.properties.push_back(property);
+	}
+	// add code to show value
+}
+
 
 void Uasset::processVarType(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing structures
@@ -1186,7 +1350,6 @@ void Uasset::processVarType(UassetData::Export& exportData, size_t& exportDataId
 }
 
 
-
 void Uasset::processVarName(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing structures
 		// Read and process fields specific
@@ -1205,6 +1368,91 @@ void Uasset::processVarName(UassetData::Export& exportData, size_t& exportDataId
 	}
 	// add code to show value
 }
+
+
+void Uasset::processPropertyFlags(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "UInt64Property") {
+		strValue = resolveFName(readInt64());
+		UassetData::Export::Property property;
+		property.PropertyName = "PropertyFlags";
+		property.PropertyType = "UInt64Property";
+		property.stringValue = "bytes";
+		property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+		exportData.properties.push_back(property);
+	}
+	// add code to show value
+}
+
+
+void Uasset::processMetaDataArray(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64());
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "ArrayProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "MetaDataArray";
+		property.PropertyType = "FString";
+		property.stringValue = "bytes";
+		property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+		exportData.properties.push_back(property);
+		currentIdx += size;
+	}
+	// add code to show value
+}
+
+
+void Uasset::processReplicationCondition(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64());
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "ByteProperty") {
+		strValue = resolveFName(readInt64());
+		UassetData::Export::Property property;
+		property.PropertyName = "ReplicationCondition";
+		property.PropertyType = "FString";
+		property.stringValue = strValue;
+		exportData.properties.push_back(property);
+	}
+	// add code to show value
+}
+
+
+void Uasset::processRepNotifyFunc(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "NameProperty") {
+		strValue = resolveFName(readInt64());
+		UassetData::Export::Property property;
+		property.PropertyName = "RepNotifyFunc";
+		property.PropertyType = "FString";
+		property.stringValue = strValue;
+		exportData.properties.push_back(property);
+	}
+	// add code to show value
+}
+
 
 
 void Uasset::processFriendlyName(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -2143,6 +2391,32 @@ void Uasset::processNodes(UassetData::Export& exportData, size_t& exportDataIdx)
 	}
 }
 
+
+void Uasset::processBlueprintGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	exportDataIdx += 8;
+	//exportData.metadata.OuterObject = resolveFName(readInt64());
+	readInt64();
+	exportDataIdx += 8;
+
+	UassetData::Export::Property property;
+	property.PropertyName = resolveFName(readInt64()); //Guid 
+	exportDataIdx += 8;
+	std::string unknown1 = resolveFName(readInt64());
+	exportDataIdx += 8;
+	std::string unknown2 = resolveFName(readInt64());
+	exportDataIdx += 8;
+	readByte();
+	exportDataIdx += 1;
+
+	property.PropertyName = "BlueprintGuid";
+	property.PropertyType = "FString";
+	property.stringValue = readGuid();
+	exportDataIdx += 16;
+	exportData.properties.push_back(property);
+}
 
 void Uasset::processGraphGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
