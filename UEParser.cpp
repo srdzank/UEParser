@@ -312,7 +312,17 @@ private:
 	std::string determineStructureType(const std::string& objectClass);
 	void processParentClass(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processCategorySorting(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processPropertyGuids(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbLegacyNeedToPurgeSkelRefs(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbOverrideParentBinding(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbShift(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbExecuteWhenPaused(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbConsumeInput(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processFunctionNameToBind(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processInputKeyEvent(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbCmd(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbAlt(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processbCtrl(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processGeneratedClass(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processLastEditedDocuments(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDefaultValue(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -335,6 +345,8 @@ private:
 	void processbIsEditable(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbSelfContext(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNone(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processInputChord(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processKey(UassetData::Export& exportData, size_t& exportDataIdx);
 	void detectPaddingAfterNone();
 	void processInputKeyDelegateBindings(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDelegateReference(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -789,7 +801,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 	exportDataIdx += 8;
 	exportDataIdx = exportData.serialOffset;
 	currentIdx = exportDataIdx;
-	if (exportData.internalIndex == 15) {
+	if (exportData.internalIndex == 14) {
 		int stop = 0;
 	}
 	// Loop until all data is read
@@ -812,11 +824,41 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "CategorySorting") {
 			processCategorySorting(exportData, exportDataIdx);
 		}
+		else if (structureType == "PropertyGuids") {
+			processPropertyGuids(exportData, exportDataIdx);
+		}
 		else if (structureType == "GeneratedClass") {
 			processGeneratedClass(exportData, exportDataIdx);
 		}
 		else if (structureType == "bLegacyNeedToPurgeSkelRefs") {
 			processbLegacyNeedToPurgeSkelRefs(exportData, exportDataIdx);
+		}
+		else if (structureType == "bConsumeInput") {
+			processbConsumeInput(exportData, exportDataIdx);
+		}
+		else if (structureType == "bExecuteWhenPaused") {
+			processbExecuteWhenPaused(exportData, exportDataIdx);
+		}
+		else if (structureType == "bOverrideParentBinding") {
+			processbOverrideParentBinding(exportData, exportDataIdx);
+		}
+		else if (structureType == "bShift") {
+			processbShift(exportData, exportDataIdx);
+		}
+		else if (structureType == "FunctionNameToBind") {
+			processFunctionNameToBind(exportData, exportDataIdx);
+		}
+		else if (structureType == "InputKeyEvent") {
+			processInputKeyEvent(exportData, exportDataIdx);
+		}
+		else if (structureType == "bCmd") {
+			processbCmd(exportData, exportDataIdx);
+		}
+		else if (structureType == "bCtrl") {
+			processbCtrl(exportData, exportDataIdx);
+		}
+		else if (structureType == "bAlt") {
+			processbAlt(exportData, exportDataIdx);
 		}
 		else if (structureType == "LastEditedDocuments") {
 			processLastEditedDocuments(exportData, exportDataIdx);
@@ -883,6 +925,12 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		}
 		else if (structureType == "None") {
 			processNone(exportData, exportDataIdx);
+		}
+		else if (structureType == "InputChord") {
+			processInputChord(exportData, exportDataIdx);
+		}
+		else if (structureType == "Key") {
+			processKey(exportData, exportDataIdx);
 		}
 		else if (structureType == "InputKeyDelegateBindings") {
 			processInputKeyDelegateBindings(exportData, exportDataIdx);
@@ -1002,8 +1050,8 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 			processRootComponent(exportData, exportDataIdx);
 		}
 		else {
-			break;
-			processDefault(exportData, exportDataIdx);
+			//break;
+			//processDefault(exportData, exportDataIdx);
 		}
 
 		// Update the index based on how much data was processed in the loop
@@ -1020,6 +1068,27 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "DefaultValue") {
 		return "DefaultValue";
 	}
+	else if (objectClass == "InputChord") {
+		return "InputChord";
+	}
+	else if (objectClass == "bExecuteWhenPaused") {
+		return "bExecuteWhenPaused";
+	}
+	else if (objectClass == "Key") {
+		return "Key";
+	}
+	else if (objectClass == "InputKeyEvent") {
+		return "InputKeyEvent";
+	}
+	else if (objectClass == "bCtrl") {
+		return "bCtrl";
+	}
+	else if (objectClass == "bShift") {
+		return "bShift";
+	}
+	else if (objectClass == "bOverrideParentBinding") {
+		return "bOverrideParentBinding";
+	}
 	else if (objectClass == "BlueprintGuid") {
 		return "BlueprintGuid";
 	}
@@ -1034,6 +1103,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "CategorySorting") {
 		return "CategorySorting";
+	}
+	else if (objectClass == "bCmd") {
+		return "bCmd";
 	}
 	else if (objectClass == "DynamicBindingObjects") {
 		return "DynamicBindingObjects";
@@ -1071,6 +1143,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "KeyName") {
 		return "KeyName";
 	}
+	else if (objectClass == "bAlt") {
+		return "bAlt";
+	}
 	else if (objectClass == "bHiddenEdTemporary") {
 		return "bHiddenEdTemporary";
 	}
@@ -1082,6 +1157,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "bIsEditable") {
 		return "bIsEditable";
+	}
+	else if (objectClass == "bConsumeInput") {
+		return "bConsumeInput";
 	}
 	else if (objectClass == "bSelfContext") {
 		return "bSelfContext";
@@ -1122,6 +1200,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "bCommentBubbleVisible") {
 		return "bCommentBubbleVisible";
+	}
+	else if (objectClass == "FunctionNameToBind") {
+		return "FunctionNameToBind";
 	}
 	else if (objectClass == "None") {
 		return "None";
@@ -1210,6 +1291,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "BlueprintSystemVersion") {
 		return "BlueprintSystemVersion";
 	}
+	else if (objectClass == "PropertyGuids") {
+		return "PropertyGuids";
+	}
 	else {
 		return "Unknown";
 	}
@@ -1233,6 +1317,171 @@ void Uasset::processGeneratedClass(UassetData::Export& exportData, size_t& expor
 	}
 }
 
+void Uasset::processbCtrl(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "BoolProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "bCtrl";
+		property.PropertyType = "bool";
+		property.boolValue = readByte();
+		exportData.properties.push_back(property);
+	}
+}
+
+void Uasset::processbCmd(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "BoolProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "bCmd";
+		property.PropertyType = "bool";
+		property.boolValue = readByte();
+		exportData.properties.push_back(property);
+	}
+}
+void Uasset::processInputKeyEvent(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+	//   7E 00 00 00 00 00 00   .~...... InputKeyEvent
+	//00 28 00 00 00 00 00 00   .(...... ByteProperty
+	//00 08 00 00 00 00 00 00   ........size = 8
+	//00 54 00 00 00 00 00 00.T...... EInputEvent
+	//00 00 77 00 00 00 00 00   ..w.....flag + (IE_Pressed 8 bytes)
+	//00 00
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64());
+	uint8_t flag = readByte();
+	std::string strValue = resolveFName(readInt64()); ;
+	if (exportData.metadata.ObjectType == "ByteProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "InputKeyEvent" + subType;
+		property.PropertyType = "FString";
+		property.stringValue = strValue;
+		exportData.properties.push_back(property);
+	}
+}
+
+void Uasset::processFunctionNameToBind(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+	 //         6D 00 00 00 00 00   ..m.....FunctionNameToBind
+		//00 00 95 00 00 00 00 00   ........NameProperty
+		//00 00 08 00 00 00 00 00   ........size = 8 bytes
+		//00 00 00 78 00 00 00 03   ...x....flag + InpActEvt_Nine_K2Node_InputKeyEvent
+		//00 00 00
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	if (exportData.metadata.ObjectType == "NameProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "FunctionNameToBind";
+		property.PropertyType = "FString";
+		property.stringValue = resolveFName(readInt64());
+		exportData.properties.push_back(property);
+	}
+}
+
+
+void Uasset::processbConsumeInput(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "BoolProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "bConsumeInput";
+		property.PropertyType = "bool";
+		property.boolValue = readByte();
+		exportData.properties.push_back(property);
+	}
+}
+
+
+
+void Uasset::processbExecuteWhenPaused(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "BoolProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "bExecuteWhenPaused";
+		property.PropertyType = "bool";
+		property.boolValue = readByte();
+		exportData.properties.push_back(property);
+	}
+}
+
+void Uasset::processbOverrideParentBinding(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "BoolProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "bOverrideParentBinding";
+		property.PropertyType = "bool";
+		property.boolValue = readByte();
+		exportData.properties.push_back(property);
+	}
+}
+
+void Uasset::processbShift(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "BoolProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "bShift";
+		property.PropertyType = "bool";
+		property.boolValue = readByte();
+		exportData.properties.push_back(property);
+	}
+}
+
+void Uasset::processbAlt(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "BoolProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "bAlt";
+		property.PropertyType = "bool";
+		property.boolValue = readByte();
+		exportData.properties.push_back(property);
+	}
+}
+
 
 void Uasset::processbLegacyNeedToPurgeSkelRefs(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing structures
@@ -1250,6 +1499,30 @@ void Uasset::processbLegacyNeedToPurgeSkelRefs(UassetData::Export& exportData, s
 		exportData.properties.push_back(property);
 	}
 }
+
+
+void Uasset::processPropertyGuids(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing structures
+		// Read and process fields specific
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64());
+	std::string subType1 = resolveFName(readInt64());
+	uint8_t flag = readByte();
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "MapProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "PropertyGuids - " + subType;
+		property.PropertyType = "FString";
+		property.stringValue = "bytes";
+		property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+		exportData.properties.push_back(property);
+		currentIdx += size;
+	}
+}
+
+
 
 void Uasset::processCategorySorting(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing structures
@@ -1569,18 +1842,24 @@ void Uasset::processUberGraphFrame(UassetData::Export& exportData, size_t& expor
 		// Read and process fields specific
 		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64()); // read subtype
+	std::string subType1 = resolveFName(readInt64()); // read subtype1
+	uint8_t flag = readByte();
+	int64_t value = 0;
+	
+	if (exportData.metadata.ObjectType == "StructProperty") {
+		if (subType == "PointerToUberGraphFrame") {
+			value = readInt64();
+			UassetData::Export::Property property;
+			property.PropertyName = "UberGraphFrame -" + subType;
+			property.PropertyType = "int";
+			property.intValue = readInt64();
+			exportData.properties.push_back(property);
+		}
+	}
 
-	readInt64();
-	exportDataIdx += 8;
-	readInt64();
-	exportDataIdx += 8;
-	readInt64();
-	exportDataIdx += 8;
-	readByte();
+
 }
 
 void Uasset::processSchema(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -1601,15 +1880,18 @@ void Uasset::processbCommentBubbleVisible_InDetailsPanel(UassetData::Export& exp
 		// Read and process fields specific
 		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
+	readInt64(); // read zeros
 
-	readByte();
-	readByte();
+	uint8_t flag = readByte();
+	uint8_t val = readByte();
 
-	// Check for end marker
+	UassetData::Export::Property property;
+	property.PropertyName = "bCommentBubbleVisible_InDetailsPanel-Value";
+	property.PropertyType = "bool";
+	property.boolValue = val;
+	exportDataIdx += 4;
+	exportData.properties.push_back(property);
+
 }
 void Uasset::processbCommentBubbleVisible(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
@@ -1713,27 +1995,75 @@ void Uasset::processNone(UassetData::Export& exportData, size_t& exportDataIdx) 
 	detectPaddingAfterNone();
 }
 
+
+void Uasset::processKey(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64()); // read subType
+
+	if (subType == "Key") {
+		uint64_t val = readInt64();
+		uint64_t val1 = readInt64();
+		uint8_t flag = readByte();
+		UassetData::Export::Property property;
+		property.PropertyName = "Key-Value";
+		property.PropertyType = "int";
+		property.intValue = val;
+		exportData.properties.push_back(property);
+	}
+}
+
+
+void Uasset::processInputChord(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Specific logic for processing  structures
+		// Read and process fields specific
+		// Example:
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64()); // read subType
+
+	if (subType == "InputChord") {
+		uint64_t val = readInt64();
+		uint64_t val1 = readInt64();
+		uint8_t flag = readByte();
+		UassetData::Export::Property property;
+		property.PropertyName = "InputChord-Value";
+		property.PropertyType = "int";
+		property.intValue = val;
+		exportData.properties.push_back(property);
+	}
+}
+
 void Uasset::processInputKeyDelegateBindings(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Specific logic for processing  structures
 		// Read and process fields specific
 		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64()); // read subType
 
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
+	if (subType == "StructProperty") {
+		uint8_t flag = readByte();
+		uint8_t val = readInt32();
+		UassetData::Export::Property property;
+		property.PropertyName = "InputKeyDelegateBindings-Value";
+		property.PropertyType = "int";
+		property.intValue = val;
+		exportData.properties.push_back(property);
+	} 
+	else if (subType == "BlueprintInputKeyDelegateBinding") {
 
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
+		readInt64(); // read zeros
+		readInt64(); // read zeros
+		uint8_t flag = readByte();
+		UassetData::Export::Property property;
+		property.PropertyName = "InputKeyDelegateBindings-Value";
+		property.PropertyType = "int";
+		property.intValue = 0;
+		exportData.properties.push_back(property);
 	}
 }
 
@@ -1883,28 +2213,17 @@ void Uasset::processUbergraphPages(UassetData::Export& exportData, size_t& expor
 }
 
 void Uasset::processUberGraphFunction(UassetData::Export& exportData, size_t& exportDataIdx) {
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	readInt64();
-	exportDataIdx += 8;
-	readByte();
-	exportDataIdx += 1;
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();  // read flag
+	int32_t value = 0;
 
-	UassetData::Export::Property property;
-	property.PropertyName = "UbergraphPages";
-	property.PropertyType = "int";
-	int count = readInt32();
-	property.intValue = count;
-	exportData.properties.push_back(property);
-	exportDataIdx += 4;
-
-	for (int i = 0; i < count; i++) {
-		property.PropertyName = "UbergraphPage[" + std::to_string(i) + "]";
+	if (exportData.metadata.ObjectType == "ObjectProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "UberGraphFunction";
 		property.PropertyType = "int";
-		property.intValue = readInt32();
+		int count = readInt32();
+		property.intValue = count;
 		exportData.properties.push_back(property);
 		exportDataIdx += 4;
 	}
@@ -2584,17 +2903,17 @@ void Uasset::processRootComponent(UassetData::Export& exportData, size_t& export
 void Uasset::processbAllowDeletion(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
+	readInt64(); // read zeros
 
+	uint8_t flag = readByte();
+	uint8_t val = readByte();
 
-	readByte();
-	exportDataIdx += 1;
-	readByte();
-	exportDataIdx += 1;
-
+	UassetData::Export::Property property;
+	property.PropertyName = "bAllowDeletion-Value";
+	property.PropertyType = "bool";
+	property.boolValue = val;
+	exportDataIdx += 4;
+	exportData.properties.push_back(property);
 }
 
 void Uasset::processDefault(UassetData::Export& exportData, size_t& exportDataIdx) {
@@ -3006,7 +3325,7 @@ void printUassetData(const UassetData& data) {
 	std::cout << "Exports:" << std::endl;
 	for (size_t i = 0; i < data.exports.size(); ++i) {
 		const auto& exportA = data.exports[i];
-		std::cout << "Export #" << (i + 1) << ":" << std::endl;
+		std::cout << std::dec <<"Export #" << (i + 1) << ":" << std::endl;
 		std::cout << "  classIndex: " << exportA.classIndex << std::endl;
 		std::cout << "  superIndex: " << exportA.superIndex << std::endl;
 		std::cout << "  templateIndex: " << exportA.templateIndex << std::endl;
