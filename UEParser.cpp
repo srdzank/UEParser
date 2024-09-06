@@ -801,7 +801,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 	exportDataIdx += 8;
 	exportDataIdx = exportData.serialOffset;
 	currentIdx = exportDataIdx;
-	if (exportData.internalIndex == 14) {
+	if (exportData.internalIndex == 16) {
 		int stop = 0;
 	}
 	// Loop until all data is read
@@ -2072,15 +2072,20 @@ void Uasset::processDelegateReference(UassetData::Export& exportData, size_t& ex
 		// Read and process fields specific
 		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64());
+	std::string subType1 = resolveFName(readInt64());
+	uint8_t flag = readByte();
+	std::string valstr = resolveFName(readInt64());
+	std::string strValue = "";
+	if (exportData.metadata.ObjectType == "StructProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "DelegateReference - " + subType;
+		property.PropertyType = "FString";
+		property.stringValue = valstr;
+		exportData.properties.push_back(property);
+	}
 
-	readInt64();
-	readByte();
-	readInt64(); // read 8 zeros
-	readInt64(); // read 8 zeros
 }
 
 
@@ -2280,20 +2285,20 @@ void Uasset::processFunctionGraphs(UassetData::Export& exportData, size_t& expor
 
 void Uasset::processFunctionReference(UassetData::Export& exportData, size_t& exportDataIdx) {
 
-	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
-
-	readInt64();
-	exportDataIdx += 8; // read MemberReference
-	readInt64();
-	exportDataIdx += 8;// read zero values
-	readInt64();
-	exportDataIdx += 8;// read zero values
-	readByte();
-	exportDataIdx += 1;
+	exportData.metadata.ObjectType = resolveFName(readInt64()); // read type
+	int64_t size = readInt64();
+	std::string subType = resolveFName(readInt64());
+	readByte(); //read flag
+	if (exportData.metadata.ObjectType == "StructProperty") {
+		if (subType == "MemberReference") {
+			std::string val = resolveFName(readInt64());
+			UassetData::Export::Property property;
+			property.PropertyName = "FunctionReference";
+			property.PropertyType = "FString";
+			property.stringValue = val;
+			exportData.properties.push_back(property);
+		}
+	}
 }
 
 void Uasset::processbIsPureFunc(UassetData::Export& exportData, size_t& exportDataIdx) {
