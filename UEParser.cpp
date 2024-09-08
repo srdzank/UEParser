@@ -384,6 +384,8 @@ private:
 	void processComponentClass(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processComponentTemplate(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processRootNodes(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processAllNodes(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processDefaultSceneRootNode(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processInternalVariableName(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processNodes(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processGraphGuid(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -822,7 +824,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 	exportDataIdx += 8;
 	exportDataIdx = exportData.serialOffset;
 	currentIdx = exportDataIdx;
-	if (exportData.internalIndex == 61) {
+	if (exportData.internalIndex == 63) {
 		int stop = 0;
 	}
 	// Loop until all data is read
@@ -1034,6 +1036,12 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		}
 		else if (structureType == "RootNodes") {
 			processRootNodes(exportData, exportDataIdx);
+		}
+		else if (structureType == "AllNodes") {
+			processAllNodes(exportData, exportDataIdx);
+		}
+		else if (structureType == "DefaultSceneRootNode") {
+			processDefaultSceneRootNode(exportData, exportDataIdx);
 		}
 		else if (structureType == "InternalVariableName") {
 			processInternalVariableName(exportData, exportDataIdx);
@@ -1321,6 +1329,12 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "RootNodes") {
 		return "RootNodes";
+	}
+	else if (objectClass == "AllNodes") {
+		return "AllNodes";
+	}
+	else if (objectClass == "DefaultSceneRootNode") {
+		return "DefaultSceneRootNode";
 	}
 	else if (objectClass == "Nodes") {
 		return "Nodes";
@@ -2788,27 +2802,86 @@ void Uasset::processInternalVariableName(UassetData::Export& exportData, size_t&
 }
 
 
-void Uasset::processRootNodes(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
+
+void Uasset::processDefaultSceneRootNode(UassetData::Export& exportData, size_t& exportDataIdx) {
+
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
+	int64_t size = readInt64(); // read size
+	uint8_t flag = readByte();  // read flag
+	int32_t value = 0;
+	if (exportData.metadata.ObjectType == "ObjectProperty") {
+		UassetData::Export::Property property;
+		property.PropertyName = "DefaultSceneRootNode";
+		property.PropertyType = "int";
+		property.intValue = readInt32();
+		exportData.properties.push_back(property);
+	}
+}
 
-	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
 
-	// Add more logic specific ...
+void Uasset::processAllNodes(UassetData::Export& exportData, size_t& exportDataIdx) {
 
-	// Add the property to the export's properties vector
-	exportData.properties.push_back(property);
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64()); // read subType
+	uint8_t flag = readByte();  // read flag
+	int32_t value = 0;
 
-	// Check for end marker
-	if (property.PropertyName == "None") {
+	if (exportData.metadata.ObjectType == "ArrayProperty") {
+
+		if (subType == "ObjectProperty") {
+			UassetData::Export::Property property;
+			property.PropertyName = "AllNodes";
+			property.PropertyType = "int";
+			int count = readInt32();
+			property.intValue = count;
+			exportData.properties.push_back(property);
+			exportDataIdx += 4;
+
+			for (int i = 0; i < count; i++) {
+				property.PropertyName = "AllNodes[" + std::to_string(i) + "]";
+				property.PropertyType = "int";
+				property.intValue = readInt32();
+				exportData.properties.push_back(property);
+				exportDataIdx += 4;
+			}
+		}
+		else {
+			;
+		}
+	}
+}
+
+void Uasset::processRootNodes(UassetData::Export& exportData, size_t& exportDataIdx) {
+
+	exportData.metadata.ObjectType = resolveFName(readInt64());
+	int64_t size = readInt64(); // read size
+	std::string subType = resolveFName(readInt64()); // read subType
+	uint8_t flag = readByte();  // read flag
+	int32_t value = 0;
+
+	if (exportData.metadata.ObjectType == "ArrayProperty") {
+
+		if (subType == "ObjectProperty") {
+			UassetData::Export::Property property;
+			property.PropertyName = "RootNodes";
+			property.PropertyType = "int";
+			int count = readInt32();
+			property.intValue = count;
+			exportData.properties.push_back(property);
+			exportDataIdx += 4;
+
+			for (int i = 0; i < count; i++) {
+				property.PropertyName = "RootNodes[" + std::to_string(i) + "]";
+				property.PropertyType = "int";
+				property.intValue = readInt32();
+				exportData.properties.push_back(property);
+				exportDataIdx += 4;
+			}
+		}
+		else {
+			;
+		}
 	}
 }
 
@@ -3452,6 +3525,38 @@ std::string resolveFNameE(const UassetData& data, int32_t idx) {
 	return "";
 }
 
+// Function to print bytes in rows of 8 and corresponding ASCII characters
+void printBytesAndAscii(const std::vector<unsigned char>& buffer) {
+    const size_t bytesPerRow = 8;
+
+    for (size_t i = 0; i < buffer.size(); i++) {
+        // Print the byte in hex format
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(buffer[i]) << " ";
+
+        // Check if we reached the end of the row
+        if ((i + 1) % bytesPerRow == 0 || i + 1 == buffer.size()) {
+            // Calculate the start index of the current row
+            size_t start = (i / bytesPerRow) * bytesPerRow;
+            size_t end = std::min(buffer.size(), start + bytesPerRow); // Ensure 'end' is within bounds
+
+            // Add spacing if the last row is incomplete
+            if (end % bytesPerRow != 0) {
+                std::cout << std::string((bytesPerRow - (end - start)) * 3, ' ');
+            }
+
+            // Print ASCII representation for the current row
+            std::cout << " | ";
+            for (size_t j = start; j < end; j++) {
+                char ch = buffer[j];
+                std::cout << (std::isprint(static_cast<unsigned char>(ch)) ? ch : '.'); // Safely cast to prevent signed/unsigned issues
+            }
+
+            std::cout << std::endl;
+        }
+    }
+}
+
+
 void printUassetData(const UassetData& data) {
 	std::cout << "Header: " << data.header.EPackageFileTag << std::endl;
 	std::cout << "Number of names: " << data.names.size() << std::endl;
@@ -3536,13 +3641,14 @@ void printUassetData(const UassetData& data) {
 					std::cout << " " << exportA.properties.at(j).stringValue << " ";
 				}
 				// Print raw bytes in the buffer
-				if (!exportA.properties.at(j).byteBuffer.empty()) {
-					std::cout << " [Bytes: ";
-					for (const auto& byte : exportA.properties.at(j).byteBuffer) {
-						std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << " ";
-					}
-					std::cout << "]";
-				}
+				//if (!exportA.properties.at(j).byteBuffer.empty()) {
+				//	std::cout << " [Bytes: ";
+				//	for (const auto& byte : exportA.properties.at(j).byteBuffer) {
+				//		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte) << " ";
+				//	}
+				//	std::cout << "]";
+				//}
+				printBytesAndAscii(exportA.properties.at(j).byteBuffer);
 				std::cout << std::endl;
 			}
 		}
