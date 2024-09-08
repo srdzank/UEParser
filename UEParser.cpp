@@ -824,7 +824,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 	exportDataIdx += 8;
 	exportDataIdx = exportData.serialOffset;
 	currentIdx = exportDataIdx;
-	if (exportData.internalIndex == 63) {
+	if (exportData.internalIndex == 16) {
 		int stop = 0;
 	}
 	// Loop until all data is read
@@ -835,17 +835,136 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 			continue;
 		}
 
-		//if ((lowerBytes(val) == 0) && (higherBytes(val) == 4)) {
-		//	readInt32();
+		if ((lowerBytes(val) == 0) && (higherBytes(val) == 1)) {
+			readInt32();
+			UassetData::Export::Property property;
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			//			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			//			exportData.properties.push_back(property);
+			break;
+		}
 
-		//	int32_t ident = readInt32(); 
-		//	readInt64();
-		//	readInt64();
-		//	readInt32();
-		//	readInt64();
-		//	readInt64();
-		//	continue;
-		//}
+		if ((lowerBytes(val) == 0) && (higherBytes(val) == 2)) {
+			readInt32();
+			UassetData::Export::Property property;
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			//			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			//			exportData.properties.push_back(property);
+			break;
+		}
+
+		if ((lowerBytes(val) == 0) && (higherBytes(val) == 3)) {
+			readInt32();
+			UassetData::Export::Property property;
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+//			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+//			exportData.properties.push_back(property);
+			break;
+		}
+		if ((lowerBytes(val) == 0) && (higherBytes(val) == 4)) {
+			readInt32();
+			UassetData::Export::Property property;
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			//			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			//			exportData.properties.push_back(property);
+			break;
+		}
+
+		if ((lowerBytes(val) == 0) && (higherBytes(val) == 5)) {
+			readInt32();
+			UassetData::Export::Property property;
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			//			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			//			exportData.properties.push_back(property);
+			break;
+		}
+
+		if ((lowerBytes(val) == 0) && (higherBytes(val) == 10)) {
+			readInt32();
+			UassetData::Export::Property property;
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			exportData.properties.push_back(property);
+			property.PropertyName = "Entity";
+			property.PropertyType = "int";
+			property.intValue = readInt32();;
+			//			exportData.properties.push_back(property);
+			property.PropertyName = "Entity Guid";
+			property.PropertyType = "FString";
+			property.stringValue = readGuid();;
+			//			exportData.properties.push_back(property);
+			break;
+		}
 
 		std::string ObjectClass = resolveFName(val);
 		exportDataIdx += 8;
