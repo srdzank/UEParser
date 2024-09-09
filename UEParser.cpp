@@ -3627,28 +3627,36 @@ std::string Uasset::readGuid() {
 	std::memcpy(guid, &(*bytesPtr)[currentIdx], sizeof(guid));
 	currentIdx += sizeof(guid);
 
-	// Convert the GUID to the correct string format
+	// Convert the GUID to the correct string format with specific reordering
 	std::ostringstream ss;
 	ss << std::hex << std::setfill('0');
 
-	// Handle endianess
-	ss << std::setw(2) << static_cast<int>(guid[3])
-		<< std::setw(2) << static_cast<int>(guid[2])
-		<< std::setw(2) << static_cast<int>(guid[1])
-		<< std::setw(2) << static_cast<int>(guid[0]) << '-';
+	// Correct byte reordering as per your requirement
+	// Desired Output: 27 C4 29 09  46 2F 46 F9  5F 7B 3A 8B 18 35 6D 39
+	ss << std::setw(2) << static_cast<int>(guid[3])  // 27
+		<< std::setw(2) << static_cast<int>(guid[2])  // C4
+		<< std::setw(2) << static_cast<int>(guid[1])  // 29
+		<< std::setw(2) << static_cast<int>(guid[0])  // 09
+		<< '-';
 
-	ss << std::setw(2) << static_cast<int>(guid[5])
-		<< std::setw(2) << static_cast<int>(guid[4]) << '-';
+	ss << std::setw(2) << static_cast<int>(guid[7])  // 46
+		<< std::setw(2) << static_cast<int>(guid[6])  // 2F
+		<< '-';
 
-	ss << std::setw(2) << static_cast<int>(guid[7])
-		<< std::setw(2) << static_cast<int>(guid[6]) << '-';
+	ss << std::setw(2) << static_cast<int>(guid[5])  // 46
+		<< std::setw(2) << static_cast<int>(guid[4])  // F9
+		<< '-';
 
-	ss << std::setw(2) << static_cast<int>(guid[8])
-		<< std::setw(2) << static_cast<int>(guid[9]) << '-';
+	ss << std::setw(2) << static_cast<int>(guid[11])  // 5F
+		<< std::setw(2) << static_cast<int>(guid[10])  // 7B
+		<< '-';
 
-	for (int i = 10; i < 16; ++i) {
-		ss << std::setw(2) << static_cast<int>(guid[i]);
-	}
+	ss << std::setw(2) << static_cast<int>(guid[9]) // 3A
+		<< std::setw(2) << static_cast<int>(guid[8]) // 8B
+		<< std::setw(2) << static_cast<int>(guid[15]) // 18
+		<< std::setw(2) << static_cast<int>(guid[14]) // 35
+		<< std::setw(2) << static_cast<int>(guid[13]) // 6D
+		<< std::setw(2) << static_cast<int>(guid[12]); // 39
 
 	return ss.str();
 }
