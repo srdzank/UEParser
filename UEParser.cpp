@@ -352,6 +352,7 @@ private:
 	void processInputChord(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processKey(UassetData::Export& exportData, size_t& exportDataIdx);
 	void detectPaddingAfterNone();
+	void processobject(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processInputKeyDelegateBindings(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDelegateReference(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processMemberReference(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -396,10 +397,14 @@ private:
 	void processMemberGuid(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processEnabledState(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processTransformComponent(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processOutputDelegate(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processthen(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processDelegate(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processself(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processRootComponent(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processexecute(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processexec(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processdelegate(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDefault(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processbAllowDeletion(UassetData::Export& exportData, size_t& exportDataIdx);
 	uint8_t readByte();
@@ -1225,13 +1230,26 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "RootComponent") {
 			processRootComponent(exportData, exportDataIdx);
 		}
-		
 		else if (structureType == "then") {
 			processthen(exportData, exportDataIdx);
 		}
-
+		else if (structureType == "Delegate") {
+			processDelegate(exportData, exportDataIdx);
+		}
+		else if (structureType == "self") {
+			processself(exportData, exportDataIdx);
+		}
 		else if (structureType == "exec") {
 			processexec(exportData, exportDataIdx);
+		}
+		else if (structureType == "delegate") {
+			processdelegate(exportData, exportDataIdx);
+		}
+		else if (structureType == "object") {
+			processobject(exportData, exportDataIdx);
+		}
+		else if (structureType == "OutputDelegate") {
+			processOutputDelegate(exportData, exportDataIdx);
 		}
 		else if (structureType == "execute") {
 			processexecute(exportData, exportDataIdx);
@@ -1255,6 +1273,12 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	else if (objectClass == "DefaultValue") {
 		return "DefaultValue";
 	}
+	else if (objectClass == "OutputDelegate") {
+		return "OutputDelegate";
+	}
+	else if (objectClass == "object") {
+		return "object";
+	}
 	else if (objectClass == "CategoryName") {
 		return "CategoryName";
 	}
@@ -1263,6 +1287,12 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "exec") {
 		return "exec";
+	}
+	else if (objectClass == "Delegate") {
+		return "Delegate";
+	}
+	else if (objectClass == "delegate") {
+		return "delegate";
 	}
 	else if (objectClass == "AdvancedPinDisplay") {
 		return "AdvancedPinDisplay";
@@ -1281,6 +1311,9 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "Key") {
 		return "Key";
+	}
+	else if (objectClass == "self") {
+		return "self";
 	}
 	else if (objectClass == "InputKeyEvent") {
 		return "InputKeyEvent";
@@ -3250,9 +3283,132 @@ void Uasset::processTransformComponent(UassetData::Export& exportData, size_t& e
 	exportData.properties.push_back(property);
 }
 
+void Uasset::processOutputDelegate(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+	int32_t val1 = readInt32();
+
+
+	if (val1 == 8) {
+		int8_t b1 = readByte();
+		std::string str1 = readFString();
+		std::string str2 = readFString();
+		std::string str3 = readFString();
+		readInt32();
+		std::string str4 = readFString();
+		int8_t b2 = readByte();
+
+		UassetData::Export::Property property;
+		property.PropertyName = "OutputDelegate - info1";
+		property.PropertyType = "FString";
+		property.stringValue = str1;
+		if (str1 != "") {
+			exportData.properties.push_back(property);
+		}
+
+		UassetData::Export::Property property2;
+		property2.PropertyName = "OutputDelegate - info2";
+		property2.PropertyType = "FString";
+		property2.stringValue = str2;
+		if (str2 != "") {
+			exportData.properties.push_back(property2);
+		}
+		UassetData::Export::Property property3;
+		property3.PropertyName = "OutputDelegate - info3";
+		property3.PropertyType = "FString";
+		property3.stringValue = str3;
+		if (str3 != "") {
+			exportData.properties.push_back(property3);
+		}
+
+		UassetData::Export::Property property4;
+		property4.PropertyName = "OutputDelegate - info4";
+		property4.PropertyType = "FString";
+		property4.stringValue = str4;
+		if (str4 != "") {
+			exportData.properties.push_back(property4);
+		}
+	}
+	else if (val1 == 0) {
+		readInt32();
+		int8_t b1 = readByte();
+		readInt32();
+		std::string str41 = readFString();
+		int8_t b2 = readByte();
+
+		UassetData::Export::Property property41;
+		property41.PropertyName = "OutputDelegate - info4";
+		property41.PropertyType = "FString";
+		property41.stringValue = str41;
+		if (str41 != "") {
+			exportData.properties.push_back(property41);
+		}
+	}
+}
+
+void Uasset::processDelegate(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+	int32_t val1 = readInt32();
+
+
+	if (val1 == 8) {
+		int8_t b1 = readByte();
+		std::string str1 = readFString();
+		std::string str2 = readFString();
+		std::string str3 = readFString();
+		readInt32();
+		std::string str4 = readFString();
+		int8_t b2 = readByte();
+
+		UassetData::Export::Property property;
+		property.PropertyName = "Delegate - info1";
+		property.PropertyType = "FString";
+		property.stringValue = str1;
+		if (str1 != "") {
+			exportData.properties.push_back(property);
+		}
+
+		UassetData::Export::Property property2;
+		property2.PropertyName = "Delegate - info2";
+		property2.PropertyType = "FString";
+		property2.stringValue = str2;
+		if (str2 != "") {
+			exportData.properties.push_back(property2);
+		}
+		UassetData::Export::Property property3;
+		property3.PropertyName = "Delegate - info3";
+		property3.PropertyType = "FString";
+		property3.stringValue = str3;
+		if (str3 != "") {
+			exportData.properties.push_back(property3);
+		}
+
+		UassetData::Export::Property property4;
+		property4.PropertyName = "Delegate - info4";
+		property4.PropertyType = "FString";
+		property4.stringValue = str4;
+		if (str4 != "") {
+			exportData.properties.push_back(property4);
+		}
+	}
+	else if (val1 == 0) {
+		readInt32();
+		int8_t b1 = readByte();
+		readInt32();
+		std::string str41 = readFString();
+		int8_t b2 = readByte();
+
+		UassetData::Export::Property property41;
+		property41.PropertyName = "Delegate - info4";
+		property41.PropertyType = "FString";
+		property41.stringValue = str41;
+		if (str41 != "") {
+			exportData.properties.push_back(property41);
+		}
+	}
+}
+
 void Uasset::processthen(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
-	// read block of 116 bytes
 	int32_t val1 = readInt32();
 	
 
@@ -3312,6 +3468,262 @@ void Uasset::processthen(UassetData::Export& exportData, size_t& exportDataIdx) 
 		}
 	}
 }
+
+void Uasset::processself(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+	int32_t val1 = readInt32();
+
+
+	if (val1 == 8) {
+		int8_t b1 = readByte();
+		std::string str1 = readFString();
+		std::string str2 = readFString();
+		std::string str3 = readFString();
+		readInt32();
+		std::string str4 = readFString();
+		int8_t b2 = readByte();
+
+		UassetData::Export::Property property;
+		property.PropertyName = "Self - info1";
+		property.PropertyType = "FString";
+		property.stringValue = str1;
+		if (str1 != "") {
+			exportData.properties.push_back(property);
+		}
+
+		UassetData::Export::Property property2;
+		property2.PropertyName = "Self - info2";
+		property2.PropertyType = "FString";
+		property2.stringValue = str2;
+		if (str2 != "") {
+			exportData.properties.push_back(property2);
+		}
+		UassetData::Export::Property property3;
+		property3.PropertyName = "Self - info3";
+		property3.PropertyType = "FString";
+		property3.stringValue = str3;
+		if (str3 != "") {
+			exportData.properties.push_back(property3);
+		}
+
+		UassetData::Export::Property property4;
+		property4.PropertyName = "Self - info4";
+		property4.PropertyType = "FString";
+		property4.stringValue = str4;
+		if (str4 != "") {
+			exportData.properties.push_back(property4);
+		}
+	}
+	else if (val1 == 0) {
+		readInt32();
+		int8_t b1 = readByte();
+		readInt32();
+		std::string str41 = readFString();
+		int8_t b2 = readByte();
+
+		UassetData::Export::Property property41;
+		property41.PropertyName = "Self - info4";
+		property41.PropertyType = "FString";
+		property41.stringValue = str41;
+		if (str41 != "") {
+			exportData.properties.push_back(property41);
+		}
+	}
+}
+
+void Uasset::processdelegate(UassetData::Export& exportData, size_t& exportDataIdx) {
+	
+	// Example:
+	int size = 82;
+	UassetData::Export::Property property;
+	property.PropertyName = "delegate";
+	property.PropertyType = "FString";
+	property.stringValue = "bytes";
+	property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+	exportData.properties.push_back(property);
+	currentIdx += size;
+
+	if (readInt64() == 1) {
+		// read entity and guid
+		UassetData::Export::Property property1;
+		property1.PropertyName = "delegate - Entity";
+		property1.PropertyType = "int";
+		property1.intValue = readInt32();;
+		exportData.properties.push_back(property1);
+		UassetData::Export::Property property2;
+		property2.PropertyName = "delegate - Entity Guid";
+		property2.PropertyType = "FString";
+		property2.stringValue = readGuid();;
+		exportData.properties.push_back(property2);
+
+		// read 36 bytes
+		int size3 = 36;
+		UassetData::Export::Property property3;
+		property3.PropertyName = "delegate - 36 bytes unknown";
+		property3.PropertyType = "FString";
+		property3.stringValue = "bytes";
+		property3.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size3);
+		exportData.properties.push_back(property3);
+		currentIdx += size3;
+
+
+		// read entity and guid value
+		UassetData::Export::Property property4;
+		property4.PropertyName = "delegate - Entity";
+		property4.PropertyType = "int";
+		property4.intValue = readInt32();;
+		exportData.properties.push_back(property4);
+		property4.PropertyName = "delegate - Entity Guid";
+		property4.PropertyType = "FString";
+		property4.stringValue = readGuid();;
+		exportData.properties.push_back(property4);
+
+		// read entity and guid value
+		UassetData::Export::Property property5;
+		property5.PropertyName = "delegate - Entity";
+		property5.PropertyType = "int";
+		property5.intValue = readInt32();;
+		//	exportData.properties.push_back(property5);
+		property5.PropertyName = "delegate - Entity Guid";
+		property5.PropertyType = "FString";
+		property5.stringValue = readGuid();;
+		//	exportData.properties.push_back(property5);
+	}
+	else if (readInt64() == 0) {
+		// read 36 bytes
+		int size31 = 32;
+		UassetData::Export::Property property31;
+		property31.PropertyName = "delegate - 36 bytes unknown";
+		property31.PropertyType = "FString";
+		property31.stringValue = "bytes";
+		property31.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size31);
+		exportData.properties.push_back(property31);
+		currentIdx += size31;
+
+		// read entity and guid value
+		UassetData::Export::Property property41;
+		property41.PropertyName = "delegate - Entity";
+		property41.PropertyType = "int";
+		property41.intValue = readInt32();;
+		exportData.properties.push_back(property41);
+		property41.PropertyName = "delegate - Entity Guid";
+		property41.PropertyType = "FString";
+		property41.stringValue = readGuid();;
+		exportData.properties.push_back(property41);
+
+		// read entity and guid value
+		UassetData::Export::Property property51;
+		property51.PropertyName = "delegate - Entity";
+		property51.PropertyType = "int";
+		property51.intValue = readInt32();;
+		//	exportData.properties.push_back(property5);
+		property51.PropertyName = "delegate - Entity Guid";
+		property51.PropertyType = "FString";
+		property51.stringValue = readGuid();;
+		//	exportData.properties.push_back(property5);
+
+	}
+	else {
+		;
+	}
+
+}
+
+void Uasset::processobject(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+	int size = 82;
+	UassetData::Export::Property property;
+	property.PropertyName = "object";
+	property.PropertyType = "FString";
+	property.stringValue = "bytes";
+	property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+	exportData.properties.push_back(property);
+	currentIdx += size;
+
+	if (readInt64() == 1) {
+		// read entity and guid
+		UassetData::Export::Property property1;
+		property1.PropertyName = "object - Entity";
+		property1.PropertyType = "int";
+		property1.intValue = readInt32();;
+		exportData.properties.push_back(property1);
+		UassetData::Export::Property property2;
+		property2.PropertyName = "object - Entity Guid";
+		property2.PropertyType = "FString";
+		property2.stringValue = readGuid();;
+		exportData.properties.push_back(property2);
+
+		// read 36 bytes
+		int size3 = 36;
+		UassetData::Export::Property property3;
+		property3.PropertyName = "object - 36 bytes unknown";
+		property3.PropertyType = "FString";
+		property3.stringValue = "bytes";
+		property3.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size3);
+		exportData.properties.push_back(property3);
+		currentIdx += size3;
+
+		// read entity and guid value
+		UassetData::Export::Property property4;
+		property4.PropertyName = "object - Entity";
+		property4.PropertyType = "int";
+		property4.intValue = readInt32();;
+		exportData.properties.push_back(property4);
+		property4.PropertyName = "object - Entity Guid";
+		property4.PropertyType = "FString";
+		property4.stringValue = readGuid();;
+		exportData.properties.push_back(property4);
+
+		// read entity and guid value
+		UassetData::Export::Property property5;
+		property5.PropertyName = "object - Entity";
+		property5.PropertyType = "int";
+		property5.intValue = readInt32();;
+		//	exportData.properties.push_back(property5);
+		property5.PropertyName = "object - Entity Guid";
+		property5.PropertyType = "FString";
+		property5.stringValue = readGuid();;
+		//	exportData.properties.push_back(property5);
+	}
+	else if (readInt64() == 0) {
+		// read 36 bytes
+		int size31 = 32;
+		UassetData::Export::Property property31;
+		property31.PropertyName = "object - 36 bytes unknown";
+		property31.PropertyType = "FString";
+		property31.stringValue = "bytes";
+		property31.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size31);
+		exportData.properties.push_back(property31);
+		currentIdx += size31;
+
+		// read entity and guid value
+		UassetData::Export::Property property41;
+		property41.PropertyName = "object - Entity";
+		property41.PropertyType = "int";
+		property41.intValue = readInt32();;
+		exportData.properties.push_back(property41);
+		property41.PropertyName = "object - Entity Guid";
+		property41.PropertyType = "FString";
+		property41.stringValue = readGuid();;
+		exportData.properties.push_back(property41);
+
+		// read entity and guid value
+		UassetData::Export::Property property51;
+		property51.PropertyName = "object - Entity";
+		property51.PropertyType = "int";
+		property51.intValue = readInt32();;
+		//	exportData.properties.push_back(property5);
+		property51.PropertyName = "object - Entity Guid";
+		property51.PropertyType = "FString";
+		property51.stringValue = readGuid();;
+		//	exportData.properties.push_back(property5);
+	}
+	else {
+		;
+	}
+
+}
+
 
 void Uasset::processexec(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
@@ -3997,7 +4409,7 @@ void printUassetData(const UassetData& data) {
 
 int main() {
 	//    std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_FrontEndPlayerController.uasset", std::ios::binary);
-	std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_SandWorldPlayerController.uasset", std::ios::binary);
+	 std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_SandWorldPlayerController.uasset", std::ios::binary);
 	//    std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_SaveGameState.uasset", std::ios::binary);
 
 	if (!file) {
