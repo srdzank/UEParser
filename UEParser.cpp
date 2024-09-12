@@ -827,7 +827,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 	exportDataIdx += 8;
 	exportDataIdx = exportData.serialOffset;
 	currentIdx = exportDataIdx;
-	if (exportData.internalIndex == 19) {
+	if (exportData.internalIndex == 25) {
 		int stop = 0;
 	}
 	// Loop until all data is read
@@ -3253,64 +3253,69 @@ void Uasset::processTransformComponent(UassetData::Export& exportData, size_t& e
 void Uasset::processthen(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
 	// read block of 116 bytes
-	int size = 116;
-	UassetData::Export::Property property;
-	property.PropertyName = "Then";
-	property.PropertyType = "FString";
-	property.stringValue = "bytes";
-	property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
-	exportData.properties.push_back(property);
-	currentIdx += size;
+	int32_t val1 = readInt32();
+	
 
-	// read entity and guid
-	UassetData::Export::Property property1;
-	property1.PropertyName = "Then - Entity";
-	property1.PropertyType = "int";
-	property1.intValue = readInt32();;
-	exportData.properties.push_back(property1);
-	UassetData::Export::Property property2;
-	property2.PropertyName = "Then - Entity Guid";
-	property2.PropertyType = "FString";
-	property2.stringValue = readGuid();;
-	exportData.properties.push_back(property2);
+	if (val1 == 8) {
+		int8_t b1 = readByte();
+		std::string str1 = readFString();
+		std::string str2 = readFString();
+		std::string str3 = readFString();
+		readInt32();
+		std::string str4 = readFString();
+		int8_t b2 = readByte();
 
-	// read 36 bytes
-	int size3 = 36;
-	UassetData::Export::Property property3;
-	property3.PropertyName = "Then - 36 bytes unknown";
-	property3.PropertyType = "FString";
-	property3.stringValue = "bytes";
-	property3.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size3);
-	exportData.properties.push_back(property3);
-	currentIdx += size3;
+		UassetData::Export::Property property;
+		property.PropertyName = "Then - info1";
+		property.PropertyType = "FString";
+		property.stringValue = str1;
+		if (str1 != "") {
+			exportData.properties.push_back(property);
+		}
 
-	// read entity and guid value
-	UassetData::Export::Property property4;
-	property4.PropertyName = "Then - Entity";
-	property4.PropertyType = "int";
-	property4.intValue = readInt32();;
-	exportData.properties.push_back(property4);
-	property4.PropertyName = "Then - Entity Guid";
-	property4.PropertyType = "FString";
-	property4.stringValue = readGuid();;
-	exportData.properties.push_back(property4);
+		UassetData::Export::Property property2;
+		property2.PropertyName = "Then - info2";
+		property2.PropertyType = "FString";
+		property2.stringValue = str2;
+		if (str2 != "") {
+			exportData.properties.push_back(property2);
+		}
+		UassetData::Export::Property property3;
+		property3.PropertyName = "Then - info3";
+		property3.PropertyType = "FString";
+		property3.stringValue = str3;
+		if (str3 != "") {
+			exportData.properties.push_back(property3);
+		}
 
-	// read entity and guid value
-	UassetData::Export::Property property5;
-	property5.PropertyName = "Then - Entity";
-	property5.PropertyType = "int";
-	property5.intValue = readInt32();;
-	//	exportData.properties.push_back(property5);
-	property5.PropertyName = "Then - Entity Guid";
-	property5.PropertyType = "FString";
-	property5.stringValue = readGuid();;
-	//	exportData.properties.push_back(property5);
+		UassetData::Export::Property property4;
+		property4.PropertyName = "Then - info4";
+		property4.PropertyType = "FString";
+		property4.stringValue = str4;
+		if (str4 != "") {
+			exportData.properties.push_back(property4);
+		}
+	}
+	else if (val1 == 0) {
+		readInt32();
+		int8_t b1 = readByte();
+		readInt32();
+		std::string str41 = readFString();
+		int8_t b2 = readByte();
 
+		UassetData::Export::Property property41;
+		property41.PropertyName = "Then - info4";
+		property41.PropertyType = "FString";
+		property41.stringValue = str41;
+		if (str41 != "") {
+			exportData.properties.push_back(property41);
+		}
+	}
 }
 
 void Uasset::processexec(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
-	int size = 90;
+	int size = 82;
 	UassetData::Export::Property property;
 	property.PropertyName = "Exec";
 	property.PropertyType = "FString";
@@ -3319,55 +3324,93 @@ void Uasset::processexec(UassetData::Export& exportData, size_t& exportDataIdx) 
 	exportData.properties.push_back(property);
 	currentIdx += size;
 	
-	// read entity and guid
-	UassetData::Export::Property property1;
-	property1.PropertyName = "Exec - Entity";
-	property1.PropertyType = "int";
-	property1.intValue = readInt32();;
-	exportData.properties.push_back(property1);
-	UassetData::Export::Property property2;
-	property2.PropertyName = "Exec - Entity Guid";
-	property2.PropertyType = "FString";
-	property2.stringValue = readGuid();;
-	exportData.properties.push_back(property2);
-	
-	// read 36 bytes
-	int size3 = 36;
-	UassetData::Export::Property property3;
-	property3.PropertyName = "Exec - 36 bytes unknown";
-	property3.PropertyType = "FString";
-	property3.stringValue = "bytes";
-	property3.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size3);
-	exportData.properties.push_back(property3);
-	currentIdx += size3;
+	if (readInt64() == 1) {
+		// read entity and guid
+		UassetData::Export::Property property1;
+		property1.PropertyName = "Exec - Entity";
+		property1.PropertyType = "int";
+		property1.intValue = readInt32();;
+		exportData.properties.push_back(property1);
+		UassetData::Export::Property property2;
+		property2.PropertyName = "Exec - Entity Guid";
+		property2.PropertyType = "FString";
+		property2.stringValue = readGuid();;
+		exportData.properties.push_back(property2);
 
-	// read entity and guid value
-	UassetData::Export::Property property4;
-	property4.PropertyName = "Exec - Entity";
-	property4.PropertyType = "int";
-	property4.intValue = readInt32();;
-	exportData.properties.push_back(property4);
-	property4.PropertyName = "Exec - Entity Guid";
-	property4.PropertyType = "FString";
-	property4.stringValue = readGuid();;
-	exportData.properties.push_back(property4);
-	
-	// read entity and guid value
-	UassetData::Export::Property property5;
-	property5.PropertyName = "Exec - Entity";
-	property5.PropertyType = "int";
-	property5.intValue = readInt32();;
-//	exportData.properties.push_back(property5);
-	property5.PropertyName = "Exec - Entity Guid";
-	property5.PropertyType = "FString";
-	property5.stringValue = readGuid();;
-//	exportData.properties.push_back(property5);
+		// read 36 bytes
+		int size3 = 36;
+		UassetData::Export::Property property3;
+		property3.PropertyName = "Exec - 36 bytes unknown";
+		property3.PropertyType = "FString";
+		property3.stringValue = "bytes";
+		property3.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size3);
+		exportData.properties.push_back(property3);
+		currentIdx += size3;
+
+		// read entity and guid value
+		UassetData::Export::Property property4;
+		property4.PropertyName = "Exec - Entity";
+		property4.PropertyType = "int";
+		property4.intValue = readInt32();;
+		exportData.properties.push_back(property4);
+		property4.PropertyName = "Exec - Entity Guid";
+		property4.PropertyType = "FString";
+		property4.stringValue = readGuid();;
+		exportData.properties.push_back(property4);
+
+		// read entity and guid value
+		UassetData::Export::Property property5;
+		property5.PropertyName = "Exec - Entity";
+		property5.PropertyType = "int";
+		property5.intValue = readInt32();;
+		//	exportData.properties.push_back(property5);
+		property5.PropertyName = "Exec - Entity Guid";
+		property5.PropertyType = "FString";
+		property5.stringValue = readGuid();;
+		//	exportData.properties.push_back(property5);
+	}
+	else if (readInt64() == 0) {
+		// read 36 bytes
+		int size31 = 32;
+		UassetData::Export::Property property31;
+		property31.PropertyName = "Exec - 36 bytes unknown";
+		property31.PropertyType = "FString";
+		property31.stringValue = "bytes";
+		property31.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size31);
+		exportData.properties.push_back(property31);
+		currentIdx += size31;
+
+		// read entity and guid value
+		UassetData::Export::Property property41;
+		property41.PropertyName = "Exec - Entity";
+		property41.PropertyType = "int";
+		property41.intValue = readInt32();;
+		exportData.properties.push_back(property41);
+		property41.PropertyName = "Exec - Entity Guid";
+		property41.PropertyType = "FString";
+		property41.stringValue = readGuid();;
+		exportData.properties.push_back(property41);
+
+		// read entity and guid value
+		UassetData::Export::Property property51;
+		property51.PropertyName = "Exec - Entity";
+		property51.PropertyType = "int";
+		property51.intValue = readInt32();;
+		//	exportData.properties.push_back(property5);
+		property51.PropertyName = "Exec - Entity Guid";
+		property51.PropertyType = "FString";
+		property51.stringValue = readGuid();;
+		//	exportData.properties.push_back(property5);
+
+	}
+	else {
+		;
+	}
 
 }
 
 void Uasset::processexecute(UassetData::Export& exportData, size_t& exportDataIdx) {
 	// Example:
-
 	int32_t val1 = readInt32();
 	int32_t val2 = readInt32();
 	int32_t val3 = readInt32();
