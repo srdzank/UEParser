@@ -1566,9 +1566,6 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 
 
 void Uasset::processGeneratedClass(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1583,9 +1580,6 @@ void Uasset::processGeneratedClass(UassetData::Export& exportData, size_t& expor
 }
 
 void Uasset::processbCtrl(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1600,9 +1594,6 @@ void Uasset::processbCtrl(UassetData::Export& exportData, size_t& exportDataIdx)
 }
 
 void Uasset::processbCmd(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1616,15 +1607,6 @@ void Uasset::processbCmd(UassetData::Export& exportData, size_t& exportDataIdx) 
 	}
 }
 void Uasset::processInputKeyEvent(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-	//   7E 00 00 00 00 00 00   .~...... InputKeyEvent
-	//00 28 00 00 00 00 00 00   .(...... ByteProperty
-	//00 08 00 00 00 00 00 00   ........size = 8
-	//00 54 00 00 00 00 00 00.T...... EInputEvent
-	//00 00 77 00 00 00 00 00   ..w.....flag + (IE_Pressed 8 bytes)
-	//00 00
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64());
@@ -1640,13 +1622,6 @@ void Uasset::processInputKeyEvent(UassetData::Export& exportData, size_t& export
 }
 
 void Uasset::processFunctionNameToBind(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-	 //         6D 00 00 00 00 00   ..m.....FunctionNameToBind
-		//00 00 95 00 00 00 00 00   ........NameProperty
-		//00 00 08 00 00 00 00 00   ........size = 8 bytes
-		//00 00 00 78 00 00 00 03   ...x....flag + InpActEvt_Nine_K2Node_InputKeyEvent
-		//00 00 00
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1661,9 +1636,6 @@ void Uasset::processFunctionNameToBind(UassetData::Export& exportData, size_t& e
 
 
 void Uasset::processbConsumeInput(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1680,9 +1652,6 @@ void Uasset::processbConsumeInput(UassetData::Export& exportData, size_t& export
 
 
 void Uasset::processbExecuteWhenPaused(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1697,9 +1666,6 @@ void Uasset::processbExecuteWhenPaused(UassetData::Export& exportData, size_t& e
 }
 
 void Uasset::processbOverrideParentBinding(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1714,9 +1680,6 @@ void Uasset::processbOverrideParentBinding(UassetData::Export& exportData, size_
 }
 
 void Uasset::processbShift(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1731,9 +1694,6 @@ void Uasset::processbShift(UassetData::Export& exportData, size_t& exportDataIdx
 }
 
 void Uasset::processbAlt(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1749,9 +1709,6 @@ void Uasset::processbAlt(UassetData::Export& exportData, size_t& exportDataIdx) 
 
 
 void Uasset::processbLegacyNeedToPurgeSkelRefs(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1767,9 +1724,6 @@ void Uasset::processbLegacyNeedToPurgeSkelRefs(UassetData::Export& exportData, s
 
 
 void Uasset::processPropertyGuids(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64());
@@ -1790,9 +1744,6 @@ void Uasset::processPropertyGuids(UassetData::Export& exportData, size_t& export
 
 
 void Uasset::processCategorySorting(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64());
@@ -1811,9 +1762,6 @@ void Uasset::processCategorySorting(UassetData::Export& exportData, size_t& expo
 
 
 void Uasset::processLastEditedDocuments(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64());
@@ -1831,8 +1779,6 @@ void Uasset::processLastEditedDocuments(UassetData::Export& exportData, size_t& 
 }
 
 void Uasset::processAdvancedPinDisplay(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64()); // read subType
@@ -1849,9 +1795,6 @@ void Uasset::processAdvancedPinDisplay(UassetData::Export& exportData, size_t& e
 }
 
 void Uasset::processParentClass(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1859,13 +1802,9 @@ void Uasset::processParentClass(UassetData::Export& exportData, size_t& exportDa
 	if (exportData.metadata.ObjectType == "ObjectProperty") {
 		value = readInt32();
 	}
-	// add code to show value
 }
 
 void Uasset::processDefaultValue(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1878,14 +1817,10 @@ void Uasset::processDefaultValue(UassetData::Export& exportData, size_t& exportD
 		property.stringValue = strValue;
 		exportData.properties.push_back(property);
 	}
-	// add code to show value
 }
 
 
 void Uasset::processVarType(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64());
@@ -1902,14 +1837,10 @@ void Uasset::processVarType(UassetData::Export& exportData, size_t& exportDataId
 		exportData.properties.push_back(property);
 		currentIdx += size;
 	}
-	// add code to show value
 }
 
 
 void Uasset::processVarName(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1922,14 +1853,10 @@ void Uasset::processVarName(UassetData::Export& exportData, size_t& exportDataId
 		property.stringValue = strValue;
 		exportData.properties.push_back(property);
 	}
-	// add code to show value
 }
 
 
 void Uasset::processPropertyFlags(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -1943,14 +1870,10 @@ void Uasset::processPropertyFlags(UassetData::Export& exportData, size_t& export
 		property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
 		exportData.properties.push_back(property);
 	}
-	// add code to show value
 }
 
 
 void Uasset::processMetaDataArray(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64());
@@ -1965,14 +1888,10 @@ void Uasset::processMetaDataArray(UassetData::Export& exportData, size_t& export
 		exportData.properties.push_back(property);
 		currentIdx += size;
 	}
-	// add code to show value
 }
 
 
 void Uasset::processReplicationCondition(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64());
@@ -1986,14 +1905,10 @@ void Uasset::processReplicationCondition(UassetData::Export& exportData, size_t&
 		property.stringValue = strValue;
 		exportData.properties.push_back(property);
 	}
-	// add code to show value
 }
 
 
 void Uasset::processRepNotifyFunc(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -2006,15 +1921,11 @@ void Uasset::processRepNotifyFunc(UassetData::Export& exportData, size_t& export
 		property.stringValue = strValue;
 		exportData.properties.push_back(property);
 	}
-	// add code to show value
 }
 
 
 
 void Uasset::processFriendlyName(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -2031,13 +1942,9 @@ void Uasset::processFriendlyName(UassetData::Export& exportData, size_t& exportD
 			exportData.properties.push_back(property);
 		}
 	}
-	// add code to show value
 }
 
 void Uasset::processCategoryName(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -2055,9 +1962,6 @@ void Uasset::processCategoryName(UassetData::Export& exportData, size_t& exportD
 
 
 void Uasset::processCategory(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -2078,14 +1982,10 @@ void Uasset::processCategory(UassetData::Export& exportData, size_t& exportDataI
 			exportData.properties.push_back(property);
 		}
 	}
-	// add code to show value
 }
 
 
 void Uasset::processNewVariables(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing structures
-		// Read and process fields specific
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64()); // read subtype
@@ -2106,20 +2006,10 @@ void Uasset::processNewVariables(UassetData::Export& exportData, size_t& exportD
 }
 
 void Uasset::processDynamicBindingObjects(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	readInt64();
-	exportDataIdx += 8;
-
 	readByte();
-	exportDataIdx += 1;
 
 	UassetData::Export::Property property;
 	property.PropertyName = "DynamicBindingObjects";
@@ -2127,23 +2017,17 @@ void Uasset::processDynamicBindingObjects(UassetData::Export& exportData, size_t
 	int count = readInt32();
 	property.intValue = count;
 	exportData.properties.push_back(property);
-	exportDataIdx += 4;
 
 	for (int i = 0; i < count; i++) {
 		property.PropertyName = "DynamicBindingObject[" + std::to_string(i) + "]";
 		property.PropertyType = "int";
 		property.intValue = readInt32();
 		exportData.properties.push_back(property);
-		exportDataIdx += 4;
 	}
-
 }
 
 
 void Uasset::processUberGraphFrame(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64()); // read subtype
@@ -2161,27 +2045,15 @@ void Uasset::processUberGraphFrame(UassetData::Export& exportData, size_t& expor
 			exportData.properties.push_back(property);
 		}
 	}
-
-
 }
 
 void Uasset::processSchema(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
-	// move forward 5 bytes 
 	readByte();
 	readInt32();
-	exportDataIdx += 5;
 }
 void Uasset::processbCommentBubbleVisible_InDetailsPanel(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	readInt64(); // read zeros
 
@@ -2194,27 +2066,14 @@ void Uasset::processbCommentBubbleVisible_InDetailsPanel(UassetData::Export& exp
 	property.boolValue = val;
 	exportDataIdx += 4;
 	exportData.properties.push_back(property);
-
 }
 void Uasset::processbCommentBubbleVisible(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	readByte();
 	readByte();
-
-	// Check for end marker
 }
 void Uasset::processbCommentBubblePinned(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -2229,26 +2088,14 @@ void Uasset::processbCommentBubblePinned(UassetData::Export& exportData, size_t&
 }
 
 void Uasset::processbHiddenEdTemporary(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	readByte();
 	readByte();
-
-	// Check for end marker
 }
 
 
 void Uasset::processbIsEditable(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -2262,9 +2109,6 @@ void Uasset::processbIsEditable(UassetData::Export& exportData, size_t& exportDa
 	}
 }
 void Uasset::processbSelfContext(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -2304,9 +2148,6 @@ void Uasset::processNone(UassetData::Export& exportData, size_t& exportDataIdx) 
 
 
 void Uasset::processKey(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64()); // read subType
@@ -2325,9 +2166,6 @@ void Uasset::processKey(UassetData::Export& exportData, size_t& exportDataIdx) {
 
 
 void Uasset::processInputChord(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64()); // read subType
@@ -2375,9 +2213,6 @@ void Uasset::processInputKeyDelegateBindings(UassetData::Export& exportData, siz
 }
 
 void Uasset::processDelegateReference(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	std::string subType = resolveFName(readInt64());
@@ -2392,37 +2227,20 @@ void Uasset::processDelegateReference(UassetData::Export& exportData, size_t& ex
 		property.stringValue = valstr;
 		exportData.properties.push_back(property);
 	}
-
 }
 
 
 void Uasset::processMemberReference(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	bool value = readByte();
-	exportDataIdx += 1;
 }
 
 
 void Uasset::processMemberParent(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	bool value = readByte();
-	exportDataIdx += 1;
 	
 	UassetData::Export::Property property;
 	property.PropertyName = "MemberParent(value)";
@@ -2433,23 +2251,15 @@ void Uasset::processMemberParent(UassetData::Export& exportData, size_t& exportD
 }
 
 void Uasset::processMemberName(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	bool value = readByte();
-	exportDataIdx += 1;
 
 	UassetData::Export::Property property;
 	property.PropertyName = "MemberName(value)";
 	property.PropertyType = "FString";
 	property.stringValue = resolveFName(readInt64());
-	exportDataIdx += 8;
 	exportData.properties.push_back(property);
 }
 
@@ -2544,34 +2354,19 @@ void Uasset::processUberGraphFunction(UassetData::Export& exportData, size_t& ex
 void Uasset::processPackage(UassetData::Export& exportData, size_t& exportDataIdx) {
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	readInt64();
-	exportDataIdx += 8;
 	readInt64();
-	exportDataIdx += 8;
 	readInt64();
-	exportDataIdx += 8;
 	readInt32();
-	exportDataIdx += 4;
-
 }
 
 void Uasset::processFunctionGraphs(UassetData::Export& exportData, size_t& exportDataIdx) {
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	readInt64();
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 
 	UassetData::Export::Property property;
 	property.PropertyName = "FunctionGraphs";
@@ -2579,14 +2374,12 @@ void Uasset::processFunctionGraphs(UassetData::Export& exportData, size_t& expor
 	int count = readInt32();
 	property.intValue = count;
 	exportData.properties.push_back(property);
-	exportDataIdx += 4;
 
 	for (int i = 0; i < count; i++) {
 		property.PropertyName = "FunctionGraphs[" + std::to_string(i) + "]";
 		property.PropertyType = "int";
 		property.intValue = readInt32();
 		exportData.properties.push_back(property);
-		exportDataIdx += 4;
 	}
 }
 
@@ -2609,26 +2402,13 @@ void Uasset::processFunctionReference(UassetData::Export& exportData, size_t& ex
 }
 
 void Uasset::processbIsPureFunc(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	readByte();
-	exportDataIdx += 1;
 	readByte();
-	exportDataIdx += 1;
-
 }
 
 void Uasset::processbOverrideFunction(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -2640,17 +2420,10 @@ void Uasset::processbOverrideFunction(UassetData::Export& exportData, size_t& ex
 		property.boolValue = readByte();
 		exportData.properties.push_back(property);
 	}
-
 }
 
 
-
-
-
 void Uasset::processbIsConstFunc(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64(); // read size
 	uint8_t flag = readByte();
@@ -2666,109 +2439,62 @@ void Uasset::processbIsConstFunc(UassetData::Export& exportData, size_t& exportD
 
 
 void Uasset::processNodePosX(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	UassetData::Export::Property property;
-
 	readByte();
-	exportDataIdx += 1;
 
 	property.PropertyName = "NodePosX";
 	property.PropertyType = "int";
 	property.intValue = readInt32();
 	exportData.properties.push_back(property);
-	exportDataIdx += 4;
 }
 
 void Uasset::processNodePosY(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	UassetData::Export::Property property;
-
 	readByte();
-	exportDataIdx += 1;
 
 	property.PropertyName = "NodePosY";
 	property.PropertyType = "int";
 	property.intValue = readInt32();
 	exportData.properties.push_back(property);
-	exportDataIdx += 4;
 }
 
 void Uasset::processNodeWidth(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
 	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	UassetData::Export::Property property;
 
 	readByte();
-	exportDataIdx += 1;
 
 	property.PropertyName = "NodeWidth";
 	property.PropertyType = "int";
 	property.intValue = readInt32();
 	exportData.properties.push_back(property);
-	exportDataIdx += 4;
-
 }
 
 
 void Uasset::processNodeHeight(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	UassetData::Export::Property property;
 
 	readByte();
-	exportDataIdx += 1;
 
 	property.PropertyName = "NodeHeight";
 	property.PropertyType = "int";
 	property.intValue = readInt32();
 	exportData.properties.push_back(property);
-	exportDataIdx += 4;
 }
 
 void Uasset::processNodeComment(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	UassetData::Export::Property property;
-
 	readByte();
-	exportDataIdx += 1;
 
 	property.PropertyName = "NodeComment";
 	property.PropertyType = "FString";
@@ -2778,42 +2504,21 @@ void Uasset::processNodeComment(UassetData::Export& exportData, size_t& exportDa
 }
 
 void Uasset::processCustomFunctionName(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
-
 	readByte();
-	exportDataIdx += 1;
 	UassetData::Export::Property property;
 	property.PropertyName = "CustomFunctionName";
 	property.PropertyType = "FString";
 	property.stringValue = resolveFName(readInt64());
-	exportDataIdx += 8;
-
-	// Add more logic specific ...
 
 	// Add the property to the export's properties vector
 	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
 }
 
 void Uasset::processEventReference(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	readInt64();
 	readInt64();
@@ -2822,16 +2527,9 @@ void Uasset::processEventReference(UassetData::Export& exportData, size_t& expor
 }
 
 void Uasset::processExtraFlags(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 	UassetData::Export::Property property;
 	property.PropertyName = "ExtraFlagsValues";
 	property.PropertyType = "int";
@@ -2842,78 +2540,47 @@ void Uasset::processExtraFlags(UassetData::Export& exportData, size_t& exportDat
 
 
 void Uasset::processCustomClass(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 	UassetData::Export::Property property;
 	property.PropertyName = "CustomClass-Value";
 	property.PropertyType = "int";
 	property.intValue = readInt32();
-	exportDataIdx += 4;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processInputKey(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
 	property.PropertyName = "InputKey";
 	property.PropertyType = "FString";
 	property.stringValue = resolveFName(readInt64());
-	exportDataIdx += 8;
 	exportData.properties.push_back(property);
 
 	readInt64();
-	exportDataIdx += 8;
 	readInt64();
-	exportDataIdx += 8;
 	readByte();
 
 }
 void Uasset::processKeyName(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 
 	UassetData::Export::Property property;
 	property.PropertyName = "KeyName";
 	property.PropertyType = "FString";
 	property.stringValue = resolveFName(readInt64());
-	exportDataIdx += 8;
 	exportData.properties.push_back(property);
 }
 
 
 void Uasset::processVariableReference(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 	readInt64();
 	readInt64();
 	readInt64();
@@ -2921,32 +2588,15 @@ void Uasset::processVariableReference(UassetData::Export& exportData, size_t& ex
 }
 
 void Uasset::processbVisualizeComponent(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-		// Read and process fields specific
-		// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
 	property.PropertyName = resolveFName(readInt32());
-	exportDataIdx += 4;
-
-	// Add more logic specific ...
-
-	// Add the property to the export's properties vector
 	exportData.properties.push_back(property);
-
-	// Check for end marker
-	if (property.PropertyName == "None") {
-	}
 }
 
 void Uasset::processComponentClass(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
-
 	exportData.metadata.ObjectType = resolveFName(readInt64());
     int64_t size = readInt64();
 	int8_t flag = readByte();
@@ -2959,7 +2609,6 @@ void Uasset::processComponentClass(UassetData::Export& exportData, size_t& expor
 }
 
 void Uasset::processComponentTemplate(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64();
@@ -2974,7 +2623,6 @@ void Uasset::processComponentTemplate(UassetData::Export& exportData, size_t& ex
 
 
 void Uasset::processInternalVariableName(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Specific logic for processing  structures
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64();
@@ -3072,17 +2720,11 @@ void Uasset::processRootNodes(UassetData::Export& exportData, size_t& exportData
 }
 
 void Uasset::processNodes(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	resolveFName(readInt64());
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 
 	UassetData::Export::Property property;
 	property.PropertyName = "NumberOfNodes";
@@ -3090,174 +2732,116 @@ void Uasset::processNodes(UassetData::Export& exportData, size_t& exportDataIdx)
 	int count = readInt32();
 	property.intValue = count;
 	exportData.properties.push_back(property);
-	exportDataIdx += 4;
 
 	for (int i = 0; i < count; i++) {
 		property.PropertyName = "Node["+ std::to_string(i)+"]";
 		property.PropertyType = "int";
 		property.intValue = readInt32();
 		exportData.properties.push_back(property);
-		exportDataIdx += 4;
-
 	}
 }
 
 
 void Uasset::processBlueprintGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
 	property.PropertyName = resolveFName(readInt64()); //Guid 
-	exportDataIdx += 8;
 	std::string unknown1 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	std::string unknown2 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 
 	property.PropertyName = "BlueprintGuid";
 	property.PropertyType = "FString";
 	property.stringValue = readGuid();
-	exportDataIdx += 16;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processGraphGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
 	property.PropertyName = resolveFName(readInt64()); //Guid 
-	exportDataIdx += 8;
 	std::string unknown1 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	std::string unknown2 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 	
 	property.PropertyName = "GraphGuid";
 	property.PropertyType = "FString";
 	property.stringValue = readGuid();
-	exportDataIdx += 16;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processVarGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
 	property.PropertyName = resolveFName(readInt64()); //Guid 
-	exportDataIdx += 8;
 	std::string unknown1 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	std::string unknown2 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 	property.PropertyName = "VarGuid";
 	property.PropertyType = "FString";
 	property.stringValue = readGuid();
-	exportDataIdx += 16;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processVariableGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
 	property.PropertyName = resolveFName(readInt64()); //Guid 
-	exportDataIdx += 8;
 	std::string unknown1 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	std::string unknown2 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 	property.PropertyName = "VariableGuid";
 	property.PropertyType = "FString";
 	property.stringValue = readGuid();
-	exportDataIdx += 16;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processNodeGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
 	property.PropertyName = resolveFName(readInt64()); //Guid 
-	exportDataIdx += 8;
 	std::string unknown1 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	std::string unknown2 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 	property.PropertyName = "NodeGuid";
 	property.PropertyType = "FString";
 	property.stringValue = readGuid();
-	exportDataIdx += 16;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processMemberGuid(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 
 	UassetData::Export::Property property;
 	property.PropertyName = resolveFName(readInt64()); //Guid 
-	exportDataIdx += 8;
 	std::string unknown1 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	std::string unknown2 = resolveFName(readInt64());
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 
 	property.PropertyName = "MemberGuid";
 	property.PropertyType = "FString";
 	property.stringValue = readGuid();
-	exportDataIdx += 16;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processEnabledState(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
 	int64_t size = readInt64();
@@ -3273,28 +2857,20 @@ void Uasset::processEnabledState(UassetData::Export& exportData, size_t& exportD
 }
 
 void Uasset::processTransformComponent(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
 	readInt64();
-	exportDataIdx += 8;
 	readByte();
-	exportDataIdx += 1;
 
 	UassetData::Export::Property property;
 	property.PropertyName = "TransformComponent-Value";
 	property.PropertyType = "int";
 	property.intValue = readInt32();
-	exportDataIdx += 4;
 	exportData.properties.push_back(property);
 }
 
 void Uasset::processOutputDelegate(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 	int32_t val1 = readInt32();
-
 
 	if (val1 == 8) {
 		int8_t b1 = readByte();
@@ -3354,9 +2930,7 @@ void Uasset::processOutputDelegate(UassetData::Export& exportData, size_t& expor
 }
 
 void Uasset::processDelegate(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 	int32_t val1 = readInt32();
-
 
 	if (val1 == 8) {
 		int8_t b1 = readByte();
@@ -3371,32 +2945,24 @@ void Uasset::processDelegate(UassetData::Export& exportData, size_t& exportDataI
 		property.PropertyName = "Delegate - info1";
 		property.PropertyType = "FString";
 		property.stringValue = str1;
-		if (str1 != "") {
-			exportData.properties.push_back(property);
-		}
+		exportData.properties.push_back(property);
 
 		UassetData::Export::Property property2;
 		property2.PropertyName = "Delegate - info2";
 		property2.PropertyType = "FString";
 		property2.stringValue = str2;
-		if (str2 != "") {
-			exportData.properties.push_back(property2);
-		}
+		exportData.properties.push_back(property2);
 		UassetData::Export::Property property3;
 		property3.PropertyName = "Delegate - info3";
 		property3.PropertyType = "FString";
 		property3.stringValue = str3;
-		if (str3 != "") {
-			exportData.properties.push_back(property3);
-		}
+		exportData.properties.push_back(property3);
 
 		UassetData::Export::Property property4;
 		property4.PropertyName = "Delegate - info4";
 		property4.PropertyType = "FString";
 		property4.stringValue = str4;
-		if (str4 != "") {
-			exportData.properties.push_back(property4);
-		}
+		exportData.properties.push_back(property4);
 	}
 	else if (val1 == 0) {
 		readInt32();
@@ -3409,16 +2975,12 @@ void Uasset::processDelegate(UassetData::Export& exportData, size_t& exportDataI
 		property41.PropertyName = "Delegate - info4";
 		property41.PropertyType = "FString";
 		property41.stringValue = str41;
-		if (str41 != "") {
-			exportData.properties.push_back(property41);
-		}
+		exportData.properties.push_back(property41);
 	}
 }
 
 void Uasset::processthen(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
 	int32_t val1 = readInt32();
-	
 
 	if (val1 == 8) {
 		int8_t b1 = readByte();
@@ -3433,32 +2995,24 @@ void Uasset::processthen(UassetData::Export& exportData, size_t& exportDataIdx) 
 		property.PropertyName = "Then - info1";
 		property.PropertyType = "FString";
 		property.stringValue = str1;
-		if (str1 != "") {
-			exportData.properties.push_back(property);
-		}
+		exportData.properties.push_back(property);
 
 		UassetData::Export::Property property2;
 		property2.PropertyName = "Then - info2";
 		property2.PropertyType = "FString";
 		property2.stringValue = str2;
-		if (str2 != "") {
-			exportData.properties.push_back(property2);
-		}
+		exportData.properties.push_back(property2);
 		UassetData::Export::Property property3;
 		property3.PropertyName = "Then - info3";
 		property3.PropertyType = "FString";
 		property3.stringValue = str3;
-		if (str3 != "") {
-			exportData.properties.push_back(property3);
-		}
+		exportData.properties.push_back(property3);
 
 		UassetData::Export::Property property4;
 		property4.PropertyName = "Then - info4";
 		property4.PropertyType = "FString";
 		property4.stringValue = str4;
-		if (str4 != "") {
-			exportData.properties.push_back(property4);
-		}
+		exportData.properties.push_back(property4);
 	}
 	else if (val1 == 0) {
 		readInt32();
@@ -3471,9 +3025,7 @@ void Uasset::processthen(UassetData::Export& exportData, size_t& exportDataIdx) 
 		property41.PropertyName = "Then - info4";
 		property41.PropertyType = "FString";
 		property41.stringValue = str41;
-		if (str41 != "") {
 			exportData.properties.push_back(property41);
-		}
 	}
 }
 
@@ -3495,32 +3047,24 @@ void Uasset::processself(UassetData::Export& exportData, size_t& exportDataIdx) 
 		property.PropertyName = "Self - info1";
 		property.PropertyType = "FString";
 		property.stringValue = str1;
-		if (str1 != "") {
-			exportData.properties.push_back(property);
-		}
+		exportData.properties.push_back(property);
 
 		UassetData::Export::Property property2;
 		property2.PropertyName = "Self - info2";
 		property2.PropertyType = "FString";
 		property2.stringValue = str2;
-		if (str2 != "") {
-			exportData.properties.push_back(property2);
-		}
+		exportData.properties.push_back(property2);
 		UassetData::Export::Property property3;
 		property3.PropertyName = "Self - info3";
 		property3.PropertyType = "FString";
 		property3.stringValue = str3;
-		if (str3 != "") {
-			exportData.properties.push_back(property3);
-		}
+		exportData.properties.push_back(property3);
 
 		UassetData::Export::Property property4;
 		property4.PropertyName = "Self - info4";
 		property4.PropertyType = "FString";
 		property4.stringValue = str4;
-		if (str4 != "") {
-			exportData.properties.push_back(property4);
-		}
+		exportData.properties.push_back(property4);
 	}
 	else if (val1 == 0) {
 		readInt32();
@@ -3533,9 +3077,7 @@ void Uasset::processself(UassetData::Export& exportData, size_t& exportDataIdx) 
 		property41.PropertyName = "Self - info4";
 		property41.PropertyType = "FString";
 		property41.stringValue = str41;
-		if (str41 != "") {
-			exportData.properties.push_back(property41);
-		}
+		exportData.properties.push_back(property41);
 	}
 }
 
@@ -3830,18 +3372,29 @@ void Uasset::processexec(UassetData::Export& exportData, size_t& exportDataIdx) 
 }
 
 void Uasset::processexecute(UassetData::Export& exportData, size_t& exportDataIdx) {
-	// Example:
-	int32_t val1 = readInt32();
-	int32_t val2 = readInt32();
-	int32_t val3 = readInt32();
-	int8_t  val4 = readByte();
-	std::string strVal = readFString();
-	readByte();
+
+	int32_t val1 = readInt32(); // PinFriendlyName
+	int32_t val2 = readInt32(); // PinFriendlyName
+	int8_t val3 = readByte(); // PinFriendlyName
+	int32_t  val4 = readInt32(); // Source index
+	std::string strVal = readFString();  //PinToolTip
+	int32_t  val5 = readByte(); // Direction
 	UassetData::Export::Property property;
-	property.PropertyName = "Execute";
-	property.PropertyType = "FString";
-	property.stringValue = strVal;
+	property.PropertyName = "Execute -Source index ";
+	property.PropertyType = "int";
+	property.intValue = val4;
 	exportData.properties.push_back(property);
+	UassetData::Export::Property property2;
+	property2.PropertyName = "Execute -PinToolTip ";
+	property2.PropertyType = "FString";
+	property2.stringValue = strVal;
+	exportData.properties.push_back(property2);
+	UassetData::Export::Property property3;
+	property3.PropertyName = "Execute -Direction ";
+	property3.PropertyType = "int";
+	property3.intValue = val5;
+	exportData.properties.push_back(property3);
+
 }
 
 void Uasset::processWorldContextObject(UassetData::Export& exportData, size_t& exportDataIdx) {
