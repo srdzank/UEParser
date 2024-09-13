@@ -403,6 +403,7 @@ private:
 	void processself(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processRootComponent(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processexecute(UassetData::Export& exportData, size_t& exportDataIdx);
+	void processWorldContextObject(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processexec(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processdelegate(UassetData::Export& exportData, size_t& exportDataIdx);
 	void processDefault(UassetData::Export& exportData, size_t& exportDataIdx);
@@ -832,7 +833,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 	exportDataIdx += 8;
 	exportDataIdx = exportData.serialOffset;
 	currentIdx = exportDataIdx;
-	if (exportData.internalIndex == 25) {
+	if (exportData.internalIndex == 18) {
 		int stop = 0;
 	}
 	// Loop until all data is read
@@ -864,6 +865,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 			property.PropertyType = "FString";
 			property.stringValue = readGuid();;
 			//			exportData.properties.push_back(property);
+			continue;
 		}
 
 		if ((lowerBytes(val) == 0) && (higherBytes(val) == 2)) {
@@ -885,6 +887,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 			property.PropertyType = "FString";
 			property.stringValue = readGuid();;
 			//			exportData.properties.push_back(property);
+			continue;
 		}
 
 		if ((lowerBytes(val) == 0) && (higherBytes(val) == 3)) {
@@ -906,6 +909,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 			property.PropertyType = "FString";
 			property.stringValue = readGuid();;
 //			exportData.properties.push_back(property);
+			continue;
 		}
 		if ((lowerBytes(val) == 0) && (higherBytes(val) == 4)) {
 			readInt32();
@@ -926,6 +930,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 			property.PropertyType = "FString";
 			property.stringValue = readGuid();;
 			//			exportData.properties.push_back(property);
+			continue;
 		}
 
 		if ((lowerBytes(val) == 0) && (higherBytes(val) == 5)) {
@@ -947,6 +952,7 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 			property.PropertyType = "FString";
 			property.stringValue = readGuid();;
 			//			exportData.properties.push_back(property);
+			continue;
 		}
 
 		if ((lowerBytes(val) == 0) && (higherBytes(val) == 10)) {
@@ -968,8 +974,9 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 			property.PropertyType = "FString";
 			property.stringValue = readGuid();;
 			//			exportData.properties.push_back(property);
-			break;
+			continue;
 		}
+
 
 		std::string ObjectClass = resolveFName(val);
 		exportDataIdx += 8;
@@ -1254,6 +1261,9 @@ void Uasset::readExportData(UassetData::Export& exportData) {
 		else if (structureType == "execute") {
 			processexecute(exportData, exportDataIdx);
 		}
+		else if (structureType == "WorldContextObject") {
+			processWorldContextObject(exportData, exportDataIdx);
+		}
 		else {
 			//break;
 			//processDefault(exportData, exportDataIdx);
@@ -1272,6 +1282,10 @@ std::string Uasset::determineStructureType(const std::string& objectClass) {
 	}
 	else if (objectClass == "DefaultValue") {
 		return "DefaultValue";
+	}
+	
+	else if (objectClass == "WorldContextObject") {
+		return "WorldContextObject";
 	}
 	else if (objectClass == "OutputDelegate") {
 		return "OutputDelegate";
@@ -3246,21 +3260,15 @@ void Uasset::processEnabledState(UassetData::Export& exportData, size_t& exportD
 	// Example:
 
 	exportData.metadata.ObjectType = resolveFName(readInt64());
-	exportDataIdx += 8;
-	//exportData.metadata.OuterObject = resolveFName(readInt64());
-	readInt64();
-	exportDataIdx += 8;
+	int64_t size = readInt64();
+	std::string subType = resolveFName(readInt64());
+	int8_t flag = readByte();
+	std::string value = resolveFName(readInt64());
 
 	UassetData::Export::Property property;
-	property.PropertyName = resolveFName(readInt64());
-	exportDataIdx += 8;
+	property.PropertyName = "EnabledState";
 	property.PropertyType = "FString";
-
-	readByte();
-	exportDataIdx += 1;
-
-	property.stringValue = resolveFName(readInt64());
-	exportDataIdx += 8;
+	property.stringValue = value;
 	exportData.properties.push_back(property);
 }
 
@@ -3833,9 +3841,22 @@ void Uasset::processexecute(UassetData::Export& exportData, size_t& exportDataId
 	property.PropertyName = "Execute";
 	property.PropertyType = "FString";
 	property.stringValue = strVal;
-	if (strVal != ""){
-		exportData.properties.push_back(property);
-	}
+	exportData.properties.push_back(property);
+}
+
+void Uasset::processWorldContextObject(UassetData::Export& exportData, size_t& exportDataIdx) {
+	// Example:
+	int32_t val1 = readInt32();
+	int32_t val2 = readInt32();
+	int32_t val3 = readInt32();
+	int8_t  val4 = readByte();
+	std::string strVal = readFString();
+	readByte();
+	UassetData::Export::Property property;
+	property.PropertyName = "WorldContextObject";
+	property.PropertyType = "FString";
+	property.stringValue = strVal;
+	exportData.properties.push_back(property);
 }
 
 void Uasset::processRootComponent(UassetData::Export& exportData, size_t& exportDataIdx) {
