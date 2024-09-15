@@ -3871,6 +3871,11 @@ void printUassetData(const UassetData& data) {
 	std::cout << "Number of names: " << data.names.size() << std::endl;
 	std::cout << "Number of imports: " << data.imports.size() << std::endl;
 	std::cout << "Number of exports: " << data.exports.size() << std::endl;
+	for (size_t i = 0; i < data.exports.size(); ++i) {
+		std::cout << "export:[" << i << "]   offset: "
+			<< data.exports.at(i).serialOffset << "  size: "
+			<< data.exports.at(i).serialSize << std::endl;
+	}
 
 	// Print names
 	for (const auto& name : data.names) {
