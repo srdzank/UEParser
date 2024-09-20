@@ -1729,16 +1729,32 @@ void Uasset::processPropertyGuids(UassetData::Export& exportData, size_t& export
 	std::string subType = resolveFName(readInt64());
 	std::string subType1 = resolveFName(readInt64());
 	uint8_t flag = readByte();
-	std::string strValue = "";
-	if (exportData.metadata.ObjectType == "MapProperty") {
+	readInt32();
+	uint32_t numGuids = readInt32();
+	for (int i = 0; i < numGuids; i++) {
 		UassetData::Export::Property property;
-		property.PropertyName = "PropertyGuids - " + subType;
+		property.PropertyName = "PropertyGuids - Name";
 		property.PropertyType = "FString";
-		property.stringValue = "bytes";
-		property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+		property.stringValue = resolveFName(readInt64());
 		exportData.properties.push_back(property);
-		currentIdx += size;
+		
+		UassetData::Export::Property property2;
+		property2.PropertyName = "PropertyGuids - Guid";
+		property2.PropertyType = "FString";
+		property2.stringValue = readGuid();
+		exportData.properties.push_back(property2);
 	}
+
+	//std::string strValue = "";
+	//if (exportData.metadata.ObjectType == "MapProperty") {
+	//	UassetData::Export::Property property;
+	//	property.PropertyName = "PropertyGuids - " + subType;
+	//	property.PropertyType = "FString";
+	//	property.stringValue = "bytes";
+	//	property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+	//	exportData.properties.push_back(property);
+	//	currentIdx += size;
+	//}
 }
 
 
@@ -1826,17 +1842,111 @@ void Uasset::processVarType(UassetData::Export& exportData, size_t& exportDataId
 	std::string subType = resolveFName(readInt64());
 	uint8_t flag = readByte();
 	std::string strValue = "";
-	if (exportData.metadata.ObjectType == "StructProperty") {
-		if(subType == "")
-		strValue = resolveFName(readInt64());
-		UassetData::Export::Property property;
-		property.PropertyName = subType;
-		property.PropertyType = "FString";
-		property.stringValue = "bytes";
-		property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
-		exportData.properties.push_back(property);
-		currentIdx += size;
-	}
+	readInt64(); // 
+	readInt64();
+	UassetData::Export::Property property;
+	property.PropertyName = subType;
+	property.PropertyType = "FString";
+	property.stringValue = "";
+	exportData.properties.push_back(property);
+
+	std::string strPinCategory = resolveFName(readInt64());
+	UassetData::Export::Property property1;
+	property1.PropertyName = subType +"-PinCategory";
+	property1.PropertyType = "FString";
+	property1.stringValue = strPinCategory;
+	exportData.properties.push_back(property1);
+
+	std::string strPinSubCategory = resolveFName(readInt64());
+	UassetData::Export::Property property2;
+	property2.PropertyName = subType + "-PinSubCategory";
+	property2.PropertyType = "FString";
+	property2.stringValue = strPinSubCategory;
+	exportData.properties.push_back(property2);
+
+	int32_t strPinSubCategoryObject = readInt32();
+	UassetData::Export::Property property3;
+	property3.PropertyName = subType + "-PinSubCategoryObject";
+	property3.PropertyType = "int";
+	property3.intValue = strPinSubCategoryObject;
+	exportData.properties.push_back(property3);
+
+	int8_t bIsArray = readByte();
+	UassetData::Export::Property property4;
+	property4.PropertyName = subType + "- bIsArray";
+	property4.PropertyType = "int";
+	property4.intValue = bIsArray;
+	exportData.properties.push_back(property4);
+
+	int8_t bIsReference = readByte();
+	UassetData::Export::Property property5;
+	property5.PropertyName = subType + "- bIsReference";
+	property5.PropertyType = "int";
+	property5.intValue = bIsReference;
+	exportData.properties.push_back(property5);
+
+
+	int8_t bIsConst = readByte();
+	UassetData::Export::Property property6;
+	property6.PropertyName = subType + "- bIsConst";
+	property6.PropertyType = "int";
+	property6.intValue = bIsConst;
+	exportData.properties.push_back(property6);
+
+	int8_t bIsWeakPointer = readByte();
+	UassetData::Export::Property property7;
+	property7.PropertyName = subType + "- bIsWeakPointer";
+	property7.PropertyType = "int";
+	property7.intValue = bIsWeakPointer;
+	exportData.properties.push_back(property7);
+
+
+	int8_t bIsMap = readByte();
+	UassetData::Export::Property property8;
+	property8.PropertyName = subType + "- bIsMap";
+	property8.PropertyType = "int";
+	property8.intValue = bIsMap;
+	exportData.properties.push_back(property8);
+
+	int8_t bIsSet = readByte();
+	UassetData::Export::Property property9;
+	property9.PropertyName = subType + "- bIsSet";
+	property9.PropertyType = "int";
+	property9.intValue = bIsSet;
+	exportData.properties.push_back(property9);
+
+
+	int8_t bIsWeak = readByte();
+	UassetData::Export::Property property10;
+	property10.PropertyName = subType + "- bIsWeak";
+	property10.PropertyType = "int";
+	property10.intValue = bIsWeak;
+	exportData.properties.push_back(property10);
+
+	int8_t bIsDelegate = readByte();
+	UassetData::Export::Property property11;
+	property11.PropertyName = subType + "- bIsDelegate";
+	property11.PropertyType = "int";
+	property11.intValue = bIsDelegate;
+	exportData.properties.push_back(property11);
+
+
+	readInt32();
+	readByte();
+	readInt64();
+	readInt64();
+	readInt32();;
+	//if (exportData.metadata.ObjectType == "StructProperty") {
+	//	if(subType == "")
+	//	strValue = resolveFName(readInt64());
+	//	UassetData::Export::Property property;
+	//	property.PropertyName = subType;
+	//	property.PropertyType = "FString";
+	//	property.stringValue = "bytes";
+	//	property.byteBuffer.assign(bytesPtr->begin() + currentIdx, bytesPtr->begin() + currentIdx + size);
+	//	exportData.properties.push_back(property);
+	//	currentIdx += size;
+	//}
 }
 
 
@@ -3988,8 +4098,9 @@ void printUassetData(const UassetData& data) {
 
 int main() {
 	//    std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_FrontEndPlayerController.uasset", std::ios::binary);
-	 std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_SandWorldPlayerController.uasset", std::ios::binary);
+	  std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_SandWorldPlayerController.uasset", std::ios::binary);
 	//    std::ifstream file("C:/Users/kapis/Downloads/Blueprint/BP_SaveGameState.uasset", std::ios::binary);
+	 
 
 	if (!file) {
 		std::cerr << "Failed to open file" << std::endl;
