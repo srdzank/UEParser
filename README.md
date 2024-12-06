@@ -1,6 +1,6 @@
 # UEParser
 
-UAssetGUI is a tool designed for low-level examination and modification of Unreal Engine game assets by hand.
+UEParser is a tool designed for low-level examination and modification of Unreal Engine game assets by hand.
 
 # Compilation
 Visual Studio 2022 or later
